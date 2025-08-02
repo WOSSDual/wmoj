@@ -73,7 +73,7 @@ jspm_packages/
 
 # Gatsby files
 .cache/
-public
+# Don't ignore public folders - they contain important files like index.html
 
 # Storybook build outputs
 .out

@@ -132,7 +132,7 @@ const ProblemDetail: React.FC = () => {
       formData.append('code', selectedFile);
       formData.append('problemId', problem.id);
 
-      const response = await fetch('http://localhost:5001/judge', {
+      const response = await fetch('https://wmoj.onrender.com/judge', {
         method: 'POST',
         body: formData,
       });
