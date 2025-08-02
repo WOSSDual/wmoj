@@ -14,7 +14,14 @@ const app = express();
 const port = process.env.PORT || 5001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://wmoj.vercel.app',
+    'https://wmoj-frontend.onrender.com'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // Supabase client
