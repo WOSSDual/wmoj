@@ -1,2 +1,3 @@
-# wmoj
-DMOJ clone for the White Oaks Secondary School Computer Science Club! 
+# WMOJ - Competitive Programming Platform
+
+The official White Oaks S.S CP website!
