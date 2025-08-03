@@ -1,3 +1,5 @@
 # WMOJ
 
-The official White Oaks S.S CP website!
+This is the offical Competitive Programming Website for White Oaks S.S! 
+
+Compete in contests, and solve problems with your friends. 
