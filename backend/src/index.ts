@@ -17,8 +17,7 @@ const port = process.env.PORT || 5001;
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://wmoj.vercel.app',
-    'https://wmoj-frontend.onrender.com'
+    'https://wmoj.ca'
   ],
   credentials: true
 }));
