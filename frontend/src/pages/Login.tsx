@@ -5,8 +5,10 @@ import { supabase } from '../services/supabase';
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -37,16 +39,101 @@ const Login: React.FC = () => {
     setIsLoading(true);
     setError('');
 
+    // Validate username
+    if (!username.trim()) {
+      setError('Username is required');
+      setIsLoading(false);
+      return;
+    }
+
+    if (username.length < 3 || username.length > 20) {
+      setError('Username must be between 3 and 20 characters');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      setError('Username can only contain letters, numbers, and underscores');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const { error } = await supabase.auth.signUp({
+      // First, check if username is already taken
+      const { data: existingUser, error: checkError } = await supabase
+        .from('user_profiles')
+        .select('username')
+        .eq('username', username.trim());
+
+      if (checkError) {
+        console.error('Error checking username:', checkError);
+        // Continue anyway, the unique constraint will catch duplicates
+      } else if (existingUser && existingUser.length > 0) {
+        setError('Username is already taken');
+        setIsLoading(false);
+        return;
+      }
+
+      // Sign up the user
+      const { data, error } = await supabase.auth.signUp({
         email,
         password
       });
 
       if (error) {
+        console.error('Signup error:', error);
         setError(error.message);
-      } else {
-        setError('Check your email for the confirmation link!');
+      } else if (data.user) {
+        console.log('User created successfully:', data.user.id);
+        
+        try {
+          // Wait a moment for the auth user to be fully created
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Create the user profile with the chosen username
+          const { data: profileData, error: profileError } = await supabase
+            .from('user_profiles')
+            .insert({
+              user_id: data.user.id,
+              username: username.trim()
+            })
+            .select();
+
+          if (profileError) {
+            console.error('Error creating user profile:', profileError);
+            
+            // Check if profile already exists
+            const { data: existingProfile } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('user_id', data.user.id)
+              .single();
+
+            if (existingProfile) {
+              // Update existing profile
+              const { error: updateError } = await supabase
+                .from('user_profiles')
+                .update({ username: username.trim() })
+                .eq('user_id', data.user.id);
+
+              if (updateError) {
+                console.error('Error updating user profile:', updateError);
+                setError('Account created but there was an issue saving your username. Please contact support.');
+              } else {
+                console.log('Profile updated successfully');
+                setError('Check your email for the confirmation link!');
+              }
+            } else {
+              setError('Account created but there was an issue saving your username. Please contact support.');
+            }
+          } else {
+            console.log('Profile created successfully:', profileData);
+            setError('Check your email for the confirmation link!');
+          }
+        } catch (profileError) {
+          console.error('Error creating user profile:', profileError);
+          setError('Account created but there was an issue saving your username. Please contact support.');
+        }
       }
     } catch (err) {
       setError('An unexpected error occurred');
@@ -61,7 +148,32 @@ const Login: React.FC = () => {
         <h1 style={styles.title}>WMOJ</h1>
         <h2 style={styles.subtitle}>Welcome to the Competitive Programming Platform</h2>
         
+        <div style={styles.toggleContainer}>
+          <button
+            onClick={() => setIsSignUp(false)}
+            style={isSignUp ? styles.toggleButton : styles.activeToggleButton}
+          >
+            Login
+          </button>
+          <button
+            onClick={() => setIsSignUp(true)}
+            style={isSignUp ? styles.activeToggleButton : styles.toggleButton}
+          >
+            Sign Up
+          </button>
+        </div>
+
         <form style={styles.form}>
+          {isSignUp && (
+            <input
+              type="text"
+              placeholder="Username (3-20 characters)"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              style={styles.input}
+              required={isSignUp}
+            />
+          )}
           <input
             type="email"
             placeholder="Email"
@@ -81,24 +193,14 @@ const Login: React.FC = () => {
           
           {error && <div style={styles.error}>{error}</div>}
           
-          <div style={styles.buttonContainer}>
-            <button
-              type="submit"
-              onClick={handleLogin}
-              disabled={isLoading}
-              style={styles.loginButton}
-            >
-              {isLoading ? 'Loading...' : 'Login'}
-            </button>
-            <button
-              type="button"
-              onClick={handleSignUp}
-              disabled={isLoading}
-              style={styles.signupButton}
-            >
-              {isLoading ? 'Loading...' : 'Sign Up'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            onClick={isSignUp ? handleSignUp : handleLogin}
+            disabled={isLoading}
+            style={styles.submitButton}
+          >
+            {isLoading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Login')}
+          </button>
         </form>
       </div>
     </div>
@@ -168,15 +270,44 @@ const styles = {
     fontSize: '1rem',
     fontWeight: 'bold'
   },
-  signupButton: {
+  toggleContainer: {
+    display: 'flex',
+    marginBottom: '1.5rem',
+    border: '1px solid #333',
+    borderRadius: '4px',
+    overflow: 'hidden'
+  },
+  toggleButton: {
     flex: 1,
     padding: '0.75rem',
     backgroundColor: 'transparent',
-    color: '#00ff88',
-    border: '1px solid #00ff88',
+    color: '#ccc',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    transition: 'all 0.2s'
+  },
+  activeToggleButton: {
+    flex: 1,
+    padding: '0.75rem',
+    backgroundColor: '#00ff88',
+    color: '#000',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontWeight: 'bold',
+    transition: 'all 0.2s'
+  },
+  submitButton: {
+    width: '100%',
+    padding: '0.75rem',
+    backgroundColor: '#00ff88',
+    color: '#000',
+    border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
-    fontSize: '1rem'
+    fontSize: '1rem',
+    fontWeight: 'bold'
   }
 };
 

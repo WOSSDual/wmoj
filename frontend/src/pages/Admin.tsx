@@ -24,6 +24,8 @@ interface Problem {
   created_at: string;
 }
 
+
+
 type TabType = 'create-contest' | 'create-problem' | 'manage-contests' | 'manage-problems';
 
 const Admin: React.FC = () => {
@@ -256,6 +258,8 @@ const Admin: React.FC = () => {
       setMessage('Failed to delete problem. Please try again.');
     }
   };
+
+
 
   const startEditContest = (contest: Contest) => {
     setEditingContest(contest);
@@ -679,6 +683,8 @@ const Admin: React.FC = () => {
     </div>
   );
 
+
+
   return (
     <div style={styles.container}>
       <div style={styles.content}>
@@ -709,6 +715,7 @@ const Admin: React.FC = () => {
           >
             Manage Problems
           </button>
+
         </div>
 
         {message && (
@@ -1029,7 +1036,8 @@ const styles = {
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '0.9rem'
-  }
+  },
+
 };
 
 export default Admin; 

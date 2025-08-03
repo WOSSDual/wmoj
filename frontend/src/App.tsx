@@ -9,6 +9,7 @@ import ProblemDetail from './pages/ProblemDetail';
 import Contests from './pages/Contests';
 import ContestDetail from './pages/ContestDetail';
 import Admin from './pages/Admin';
+import Profile from './pages/Profile';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -77,6 +78,10 @@ function App() {
           <Route 
             path="/admin" 
             element={<Admin />} 
+          />
+          <Route 
+            path="/profile" 
+            element={user ? <Profile /> : <Navigate to="/login" />} 
           />
         </Routes>
       </div>

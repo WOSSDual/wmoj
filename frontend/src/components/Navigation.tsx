@@ -20,6 +20,7 @@ const Navigation: React.FC = () => {
           <Link to="/" style={styles.navLink}>Home</Link>
           <Link to="/contests" style={styles.navLink}>Contests</Link>
           <Link to="/problems" style={styles.navLink}>Problems</Link>
+          <Link to="/profile" style={styles.navLink}>Profile</Link>
         </div>
         <button onClick={handleLogout} style={styles.logoutButton}>
           Logout

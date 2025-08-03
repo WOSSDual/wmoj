@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
+import Leaderboard from '../components/Leaderboard';
 import { supabase } from '../services/supabase';
 
 interface Contest {
@@ -36,6 +37,7 @@ const ContestDetail: React.FC = () => {
   const [contest, setContest] = useState<Contest | null>(null);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [submissions, setSubmissions] = useState<ContestSubmission[]>([]);
+  const [testCases, setTestCases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -70,6 +72,16 @@ const ContestDetail: React.FC = () => {
 
       setProblems(problemsData || []);
 
+      // Fetch test cases for all problems in this contest
+      if (problemsData && problemsData.length > 0) {
+        const { data: testCasesData } = await supabase
+          .from('test_cases')
+          .select('*')
+          .in('problem_id', problemsData.map(p => p.id));
+
+        setTestCases(testCasesData || []);
+      }
+
       // Fetch user's submissions for this contest
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -99,7 +111,10 @@ const ContestDetail: React.FC = () => {
   };
 
   const getTotalPossibleScore = () => {
-    return submissions.reduce((total, submission) => total + submission.total_tests, 0);
+    return problems.reduce((total, problem) => {
+      const problemTestCases = testCases.filter(tc => tc.problem_id === problem.id);
+      return total + problemTestCases.length;
+    }, 0);
   };
 
   if (loading) {
@@ -150,6 +165,9 @@ const ContestDetail: React.FC = () => {
           </div>
         </div>
 
+        {/* Leaderboard Section */}
+        <Leaderboard contestId={contest.id} />
+
         {problems.length === 0 ? (
           <div style={styles.emptyState}>
             <p>No problems have been added to this contest yet.</p>
@@ -161,15 +179,20 @@ const ContestDetail: React.FC = () => {
             <div style={styles.problemsGrid}>
               {problems.map((problem, index) => {
                 const submission = getSubmissionForProblem(problem.id);
+                const problemTestCases = testCases.filter(tc => tc.problem_id === problem.id);
                 return (
                   <div key={problem.id} style={styles.problemCard}>
                     <div style={styles.problemHeader}>
                       <h3 style={styles.problemTitle}>
                         Problem {index + 1}: {problem.title}
                       </h3>
-                      {submission && (
+                      {submission ? (
                         <span style={styles.scoreBadge}>
                           {submission.score}/{submission.total_tests}
+                        </span>
+                      ) : (
+                        <span style={styles.scoreBadge}>
+                          0/{problemTestCases.length}
                         </span>
                       )}
                     </div>
