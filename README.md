@@ -1,7 +1,7 @@
 # WMOJ
 
-This is the offical Competitive Programming Website for White Oaks S.S! 
+This is the official Competitive Programming Website for White Oaks S.S!
 
-Compete in contests, and solve problems with your friends. 
+Compete in contests, and solve problems with your friends.
 
-Created by @MoizDev, @BarjunM, and @AdhamAbouaita.
+Created by [@MoizDev](https://github.com/MoizDev), [@BarjunM](https://github.com/BarjunM), and [@AdhamAbouaita](https://github.com/AdhamAbouaita).
