@@ -81,7 +81,7 @@ const Problems: React.FC = () => {
             <input
               type="text"
               className="search-input"
-              placeholder="Search problems by title or description..."
+              placeholder="Search for problems..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
