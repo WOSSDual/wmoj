@@ -397,6 +397,80 @@ app.put('/api/profile', authenticateUser, async (req, res) => {
   }
 });
 
+// Get user's contest participations
+app.get('/api/participations', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    const { data: participations, error } = await supabase
+      .from('contest_participants')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error fetching participations:', error);
+      return res.status(500).json({ success: false, error: 'Failed to fetch participations' });
+    }
+
+    res.json({ success: true, data: participations || [] });
+  } catch (error) {
+    console.error('Error fetching participations:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Join contest
+app.post('/api/contests/:contestId/join', authenticateUser, async (req, res) => {
+  try {
+    const { contestId } = req.params;
+    const userId = req.user?.id;
+
+    // Check if contest exists and is active
+    const { data: contest, error: contestError } = await supabase
+      .from('contests')
+      .select('*')
+      .eq('id', contestId)
+      .eq('is_active', true)
+      .single();
+
+    if (contestError || !contest) {
+      return res.status(404).json({ success: false, error: 'Contest not found or not active' });
+    }
+
+    // Check if user is already participating
+    const { data: existingParticipation, error: checkError } = await supabase
+      .from('contest_participants')
+      .select('*')
+      .eq('contest_id', contestId)
+      .eq('user_id', userId)
+      .single();
+
+    if (checkError === null && existingParticipation) {
+      return res.status(400).json({ success: false, error: 'Already participating in this contest' });
+    }
+
+    // Join the contest
+    const { data: participation, error: joinError } = await supabase
+      .from('contest_participants')
+      .insert([{
+        contest_id: contestId,
+        user_id: userId
+      }])
+      .select()
+      .single();
+
+    if (joinError) {
+      console.error('Error joining contest:', joinError);
+      return res.status(500).json({ success: false, error: 'Failed to join contest' });
+    }
+
+    res.json({ success: true, data: participation });
+  } catch (error) {
+    console.error('Error joining contest:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // Judge endpoint for code execution
 app.post('/judge', upload.single('code'), async (req, res) => {
   try {
