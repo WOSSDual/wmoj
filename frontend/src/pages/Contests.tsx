@@ -60,6 +60,12 @@ const Contests: React.FC = () => {
   };
 
   const joinContest = async (contestId: string) => {
+    // Prevent joining if already participating
+    if (isParticipating(contestId)) {
+      alert('You are already participating in this contest');
+      return;
+    }
+
     setJoining(contestId);
     
     try {
@@ -81,12 +87,21 @@ const Contests: React.FC = () => {
       if (error) {
         if (error.code === '23505') { // Unique constraint violation
           alert('You are already participating in this contest');
+          // Refresh participations to sync state
+          fetchContests();
         } else {
           throw error;
         }
       } else {
         alert('Successfully joined the contest!');
-        fetchContests(); // Refresh participations
+        // Immediately update local state to reflect the new participation
+        const newParticipation: ContestParticipant = {
+          id: Date.now().toString(), // Temporary ID
+          contest_id: contestId,
+          user_id: user.id,
+          joined_at: new Date().toISOString()
+        };
+        setParticipations(prev => [...prev, newParticipation]);
       }
     } catch (error) {
       console.error('Error joining contest:', error);
