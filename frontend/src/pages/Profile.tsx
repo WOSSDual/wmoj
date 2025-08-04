@@ -29,38 +29,13 @@ const Profile: React.FC = () => {
         return;
       }
 
-      // First, try to get the existing profile
-      let { data: profileData, error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      // If profile doesn't exist, create one
-      if (profileError && profileError.code === 'PGRST116') {
-        console.log('Profile not found, creating one...');
-        
-        const defaultUsername = `user_${user.id.substring(0, 8)}`;
-        
-        const { data: newProfileData, error: createError } = await supabase
-          .from('user_profiles')
-          .insert({
-            user_id: user.id,
-            username: defaultUsername
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Error creating profile:', createError);
-          setError('Failed to create profile. Please try again or contact support.');
-          return;
-        }
-
-        profileData = newProfileData;
-        profileError = null;
-      } else if (profileError) {
-        console.error('Error fetching profile:', profileError);
+      if (profileError) {
         setError('Failed to load profile');
         return;
       }
