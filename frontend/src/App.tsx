@@ -10,6 +10,7 @@ import Contests from './pages/Contests';
 import ContestDetail from './pages/ContestDetail';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
+import AuthCallback from './pages/AuthCallback';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -54,6 +55,10 @@ function App() {
           <Route 
             path="/login" 
             element={user ? <Navigate to="/" /> : <Login />} 
+          />
+          <Route 
+            path="/auth/callback" 
+            element={<AuthCallback />} 
           />
           <Route 
             path="/" 
