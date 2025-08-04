@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import { supabase } from '../services/supabase';
+import MarkdownRenderer from '../components/MarkdownRenderer';
+import './ProblemDetail.css';
 
 interface Problem {
   id: string;
@@ -157,10 +159,17 @@ const ProblemDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={styles.container}>
+      <div className="problem-detail-page">
         <Navigation />
-        <div style={styles.content}>
-          <div style={styles.loading}>Loading problem...</div>
+        <div className="page-container">
+          <div className="loading-container">
+            <div className="loading-spinner">
+              <div className="spinner-ring"></div>
+              <div className="spinner-ring"></div>
+              <div className="spinner-ring"></div>
+            </div>
+            <p className="loading-text">Loading problem...</p>
+          </div>
         </div>
       </div>
     );
@@ -168,10 +177,14 @@ const ProblemDetail: React.FC = () => {
 
   if (error && !problem) {
     return (
-      <div style={styles.container}>
+      <div className="problem-detail-page">
         <Navigation />
-        <div style={styles.content}>
-          <div style={styles.error}>{error}</div>
+        <div className="page-container">
+          <div className="error-state">
+            <div className="error-icon">⚠️</div>
+            <h3 className="error-title">Error Loading Problem</h3>
+            <p className="error-description">{error}</p>
+          </div>
         </div>
       </div>
     );
@@ -180,69 +193,135 @@ const ProblemDetail: React.FC = () => {
   if (!problem) return null;
 
   return (
-    <div style={styles.container}>
+    <div className="problem-detail-page">
       <Navigation />
-      <div style={styles.content}>
-        <div style={styles.problemHeader}>
-          <h1 style={styles.title}>{problem.title}</h1>
-          {contestId && (
-            <div style={styles.contestInfo}>
-              <span style={styles.contestBadge}>Contest Problem</span>
-            </div>
-          )}
+      <div className="page-container">
+        <div className="problem-header">
+          <div className="problem-title-section">
+            <h1 className="problem-title">{problem.title}</h1>
+            {contestId && (
+              <div className="contest-badge">
+                <span className="badge-icon">🏆</span>
+                <span className="badge-text">Contest Problem</span>
+              </div>
+            )}
+          </div>
         </div>
         
-        <div style={styles.problemSection}>
-          <h2 style={styles.sectionTitle}>Problem Description</h2>
-          <div style={styles.description}>
-            {problem.description.split('\n').map((line, index) => (
-              <p key={index}>{line}</p>
-            ))}
+        <div className="problem-section card">
+          <div className="section-header">
+            <h2 className="section-title">Problem Description</h2>
+          </div>
+          <div className="problem-description">
+            <MarkdownRenderer content={problem.description} />
           </div>
         </div>
 
-        <div style={styles.submissionSection}>
-          <h2 style={styles.sectionTitle}>Submit Your Solution</h2>
-          <div style={styles.fileUpload}>
-            <input
-              type="file"
-              accept=".py"
-              onChange={handleFileChange}
-              style={styles.fileInput}
-            />
+        <div className="submission-section card">
+          <div className="section-header">
+            <h2 className="section-title">Submit Your Solution</h2>
+            <p className="section-subtitle">
+              Upload your Python code file to test your solution against our test cases
+            </p>
+          </div>
+          
+          <div className="file-upload">
+            <div className="file-input-wrapper">
+              <input
+                type="file"
+                accept=".py"
+                onChange={handleFileChange}
+                className="file-input"
+                id="code-file"
+              />
+              <label htmlFor="code-file" className="file-label">
+                <span className="file-icon">📁</span>
+                <span className="file-text">
+                  {selectedFile ? selectedFile.name : 'Choose Python file (.py)'}
+                </span>
+                <span className="file-button">Browse</span>
+              </label>
+            </div>
+            
             <button
               onClick={handleSubmit}
               disabled={!selectedFile || submitting}
-              style={styles.submitButton}
+              className={`btn btn-primary submit-btn ${submitting ? 'loading' : ''}`}
             >
-              {submitting ? 'Submitting...' : 'Submit Solution'}
+              {submitting ? (
+                <>
+                  <div className="spinner"></div>
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <>
+                  <span>Submit Solution</span>
+                  <span>🚀</span>
+                </>
+              )}
             </button>
           </div>
-          {error && <div style={styles.error}>{error}</div>}
+          
+          {error && (
+            <div className="error-message">
+              <span className="error-icon">⚠️</span>
+              <span className="error-text">{error}</span>
+            </div>
+          )}
         </div>
 
         {judgeResult && (
-          <div style={styles.resultsSection}>
-            <h2 style={styles.sectionTitle}>Results</h2>
-            <div style={styles.score}>
-              Score: {judgeResult.score} ({judgeResult.passedTests}/{judgeResult.totalTests} test cases passed)
+          <div className="results-section card">
+            <div className="section-header">
+              <h2 className="section-title">Test Results</h2>
             </div>
             
-            <div style={styles.testResults}>
+            <div className="score-display">
+              <div className="score-item">
+                <span className="score-label">Score</span>
+                <span className="score-value">{judgeResult.score}</span>
+              </div>
+              <div className="score-item">
+                <span className="score-label">Test Cases</span>
+                <span className="score-value">
+                  {judgeResult.passedTests}/{judgeResult.totalTests} passed
+                </span>
+              </div>
+            </div>
+            
+            <div className="test-results">
               {judgeResult.results.map((result, index) => (
-                <div key={index} style={styles.testResult}>
-                  <div style={styles.testHeader}>
-                    <span>Test Case {index + 1}</span>
-                    <span style={result.passed ? styles.passed : styles.failed}>
-                      {result.passed ? 'PASSED' : 'FAILED'}
+                <div 
+                  key={index} 
+                  className={`test-result ${result.passed ? 'passed' : 'failed'}`}
+                >
+                  <div className="test-header">
+                    <span className="test-number">Test Case {index + 1}</span>
+                    <span className={`test-status ${result.passed ? 'passed' : 'failed'}`}>
+                      {result.passed ? '✅ PASSED' : '❌ FAILED'}
                     </span>
                   </div>
+                  
                   {!result.passed && (
-                    <div style={styles.testDetails}>
-                      <div><strong>Input:</strong> {result.input}</div>
-                      <div><strong>Expected:</strong> {result.expectedOutput}</div>
-                      <div><strong>Actual:</strong> {result.actualOutput}</div>
-                      {result.error && <div><strong>Error:</strong> {result.error}</div>}
+                    <div className="test-details">
+                      <div className="detail-item">
+                        <span className="detail-label">Input:</span>
+                        <code className="detail-value">{result.input}</code>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">Expected:</span>
+                        <code className="detail-value">{result.expectedOutput}</code>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">Actual:</span>
+                        <code className="detail-value">{result.actualOutput}</code>
+                      </div>
+                      {result.error && (
+                        <div className="detail-item">
+                          <span className="detail-label">Error:</span>
+                          <code className="detail-value error">{result.error}</code>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -253,137 +332,6 @@ const ProblemDetail: React.FC = () => {
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#0a0a0a',
-    color: '#fff'
-  },
-  content: {
-    maxWidth: '1000px',
-    margin: '0 auto',
-    padding: '2rem'
-  },
-  problemHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '2rem',
-    flexWrap: 'wrap' as const,
-    gap: '1rem'
-  },
-  title: {
-    fontSize: '2.5rem',
-    color: '#00ff88',
-    margin: 0
-  },
-  contestInfo: {
-    display: 'flex',
-    alignItems: 'center'
-  },
-  contestBadge: {
-    backgroundColor: '#0088ff',
-    color: '#fff',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    fontSize: '0.9rem',
-    fontWeight: 'bold'
-  },
-  loading: {
-    textAlign: 'center' as const,
-    fontSize: '1.2rem',
-    color: '#ccc'
-  },
-  error: {
-    color: '#ff4444',
-    textAlign: 'center' as const,
-    fontSize: '1.1rem'
-  },
-  problemSection: {
-    marginBottom: '3rem'
-  },
-  submissionSection: {
-    marginBottom: '3rem'
-  },
-  resultsSection: {
-    marginTop: '2rem'
-  },
-  sectionTitle: {
-    color: '#00ff88',
-    marginBottom: '1rem',
-    fontSize: '1.5rem'
-  },
-  description: {
-    backgroundColor: '#1a1a1a',
-    padding: '1.5rem',
-    borderRadius: '8px',
-    border: '1px solid #333',
-    lineHeight: '1.6'
-  },
-  fileUpload: {
-    display: 'flex',
-    gap: '1rem',
-    alignItems: 'center',
-    marginBottom: '1rem'
-  },
-  fileInput: {
-    flex: 1,
-    padding: '0.5rem',
-    backgroundColor: '#2a2a2a',
-    border: '1px solid #333',
-    borderRadius: '4px',
-    color: '#fff'
-  },
-  submitButton: {
-    padding: '0.75rem 1.5rem',
-    backgroundColor: '#00ff88',
-    color: '#000',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: 'bold'
-  },
-  score: {
-    fontSize: '1.2rem',
-    color: '#00ff88',
-    marginBottom: '1rem',
-    fontWeight: 'bold'
-  },
-  testResults: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '1rem'
-  },
-  testResult: {
-    backgroundColor: '#1a1a1a',
-    padding: '1rem',
-    borderRadius: '8px',
-    border: '1px solid #333'
-  },
-  testHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '0.5rem'
-  },
-  passed: {
-    color: '#00ff88',
-    fontWeight: 'bold'
-  },
-  failed: {
-    color: '#ff4444',
-    fontWeight: 'bold'
-  },
-  testDetails: {
-    backgroundColor: '#2a2a2a',
-    padding: '1rem',
-    borderRadius: '4px',
-    fontSize: '0.9rem',
-    lineHeight: '1.4'
-  }
 };
 
 export default ProblemDetail; 

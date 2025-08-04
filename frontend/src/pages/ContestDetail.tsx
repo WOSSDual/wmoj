@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import Leaderboard from '../components/Leaderboard';
 import { supabase } from '../services/supabase';
+import './ContestDetail.css';
 
 interface Contest {
   id: string;
@@ -119,10 +120,17 @@ const ContestDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={styles.container}>
+      <div className="contest-detail-page">
         <Navigation />
-        <div style={styles.content}>
-          <div style={styles.loading}>Loading contest...</div>
+        <div className="page-container">
+          <div className="loading-container">
+            <div className="loading-spinner">
+              <div className="spinner-ring"></div>
+              <div className="spinner-ring"></div>
+              <div className="spinner-ring"></div>
+            </div>
+            <p className="loading-text">Loading contest...</p>
+          </div>
         </div>
       </div>
     );
@@ -130,87 +138,148 @@ const ContestDetail: React.FC = () => {
 
   if (error || !contest) {
     return (
-      <div style={styles.container}>
+      <div className="contest-detail-page">
         <Navigation />
-        <div style={styles.content}>
-          <div style={styles.error}>{error}</div>
+        <div className="page-container">
+          <div className="error-state">
+            <div className="error-icon">⚠️</div>
+            <h3 className="error-title">Error Loading Contest</h3>
+            <p className="error-description">{error}</p>
+            <Link to="/contests" className="btn btn-primary">
+              <span>Back to Contests</span>
+              <span>←</span>
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
+    <div className="contest-detail-page">
       <Navigation />
-      <div style={styles.content}>
-        <div style={styles.contestHeader}>
-          <h1 style={styles.title}>{contest.title}</h1>
-          <div style={styles.contestStats}>
-            <span style={styles.stat}>
-              Problems: {problems.length}
-            </span>
-            <span style={styles.stat}>
-              Score: {getTotalScore()}/{getTotalPossibleScore()}
-            </span>
+      <div className="page-container">
+        <div className="contest-header">
+          <div className="contest-title-section">
+            <h1 className="contest-title">{contest.title}</h1>
+            <div className="contest-stats">
+              <div className="stat-item">
+                <span className="stat-icon">📚</span>
+                <span className="stat-label">Problems</span>
+                <span className="stat-value">{problems.length}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-icon">🏆</span>
+                <span className="stat-label">Score</span>
+                <span className="stat-value">{getTotalScore()}/{getTotalPossibleScore()}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div style={styles.contestInfo}>
-          <p style={styles.description}>{contest.description}</p>
-          <div style={styles.meta}>
-            <span>Started: {new Date(contest.start_time).toLocaleDateString()}</span>
+        <div className="contest-info card">
+          <p className="contest-description">{contest.description}</p>
+          <div className="contest-meta">
+            <div className="meta-item">
+              <span className="meta-icon">📅</span>
+              <span className="meta-text">
+                Started: {new Date(contest.start_time).toLocaleDateString()}
+              </span>
+            </div>
             {contest.end_time && (
-              <span>Ends: {new Date(contest.end_time).toLocaleDateString()}</span>
+              <div className="meta-item">
+                <span className="meta-icon">⏰</span>
+                <span className="meta-text">
+                  Ends: {new Date(contest.end_time).toLocaleDateString()}
+                </span>
+              </div>
             )}
           </div>
         </div>
 
         {/* Leaderboard Section */}
-        <Leaderboard contestId={contest.id} />
+        <div className="leaderboard-section">
+          <Leaderboard contestId={contest.id} />
+        </div>
 
         {problems.length === 0 ? (
-          <div style={styles.emptyState}>
-            <p>No problems have been added to this contest yet.</p>
-            <p>Check back later!</p>
+          <div className="empty-state">
+            <div className="empty-icon">📝</div>
+            <h3 className="empty-title">No Problems Yet</h3>
+            <p className="empty-description">
+              No problems have been added to this contest yet. Check back later!
+            </p>
           </div>
         ) : (
-          <div style={styles.problemsSection}>
-            <h2 style={styles.sectionTitle}>Problems</h2>
-            <div style={styles.problemsGrid}>
+          <div className="problems-section">
+            <div className="section-header">
+              <h2 className="section-title">Problems</h2>
+              <p className="section-subtitle">
+                Solve these challenges to earn points and climb the leaderboard
+              </p>
+            </div>
+            
+            <div className="problems-grid">
               {problems.map((problem, index) => {
                 const submission = getSubmissionForProblem(problem.id);
                 const problemTestCases = testCases.filter(tc => tc.problem_id === problem.id);
+                const isSolved = submission && submission.score === submission.total_tests;
+                
                 return (
-                  <div key={problem.id} style={styles.problemCard}>
-                    <div style={styles.problemHeader}>
-                      <h3 style={styles.problemTitle}>
+                  <div 
+                    key={problem.id} 
+                    className={`problem-card card animate-scale-in ${isSolved ? 'solved' : ''}`}
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <div className="problem-header">
+                      <h3 className="problem-title">
                         Problem {index + 1}: {problem.title}
                       </h3>
-                      {submission ? (
-                        <span style={styles.scoreBadge}>
-                          {submission.score}/{submission.total_tests}
+                      <div className="problem-badge">
+                        {isSolved ? (
+                          <span className="badge-icon">✅</span>
+                        ) : submission ? (
+                          <span className="badge-icon">🔄</span>
+                        ) : (
+                          <span className="badge-icon">💻</span>
+                        )}
+                        <span className="badge-text">
+                          {submission ? `${submission.score}/${submission.total_tests}` : `0/${problemTestCases.length}`}
                         </span>
-                      ) : (
-                        <span style={styles.scoreBadge}>
-                          0/{problemTestCases.length}
-                        </span>
-                      )}
+                      </div>
                     </div>
                     
-                    <p style={styles.problemDescription}>
-                      {problem.description.length > 150
-                        ? `${problem.description.substring(0, 150)}...`
-                        : problem.description}
+                    <p className="problem-description">
+                      {(() => {
+                        // Strip markdown formatting for preview
+                        const plainText = problem.description
+                          .replace(/#{1,6}\s+/g, '') // Remove headers
+                          .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+                          .replace(/\*(.*?)\*/g, '$1') // Remove italic
+                          .replace(/`(.*?)`/g, '$1') // Remove inline code
+                          .replace(/\$\$(.*?)\$\$/g, '') // Remove block math
+                          .replace(/\$(.*?)\$/g, '') // Remove inline math
+                          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
+                          .replace(/\n+/g, ' ') // Replace newlines with spaces
+                          .trim();
+                        
+                        return plainText.length > 150
+                          ? `${plainText.substring(0, 150)}...`
+                          : plainText;
+                      })()}
                     </p>
 
-                    <div style={styles.problemActions}>
+                    <div className="problem-actions">
                       <Link
                         to={`/problem/${problem.id}?contest=${contest.id}`}
-                        style={styles.solveButton}
+                        className={`btn ${isSolved ? 'btn-secondary' : 'btn-primary'}`}
                       >
-                        {submission ? 'View Solution' : 'Solve Problem'}
+                        <span>{submission ? 'View Solution' : 'Solve Problem'}</span>
+                        <span>{isSolved ? '✅' : '→'}</span>
                       </Link>
                     </div>
+                    
+                    <div className="problem-glow"></div>
                   </div>
                 );
               })}
@@ -220,140 +289,6 @@ const ContestDetail: React.FC = () => {
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#0a0a0a',
-    color: '#fff'
-  },
-  content: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '2rem'
-  },
-  contestHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '2rem',
-    flexWrap: 'wrap' as const,
-    gap: '1rem'
-  },
-  title: {
-    fontSize: '2.5rem',
-    color: '#00ff88',
-    margin: 0
-  },
-  contestStats: {
-    display: 'flex',
-    gap: '1rem'
-  },
-  stat: {
-    backgroundColor: '#1a1a1a',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    color: '#00ff88',
-    fontWeight: 'bold'
-  },
-  contestInfo: {
-    backgroundColor: '#1a1a1a',
-    padding: '1.5rem',
-    borderRadius: '8px',
-    border: '1px solid #333',
-    marginBottom: '2rem'
-  },
-  description: {
-    color: '#ccc',
-    lineHeight: '1.6',
-    marginBottom: '1rem'
-  },
-  meta: {
-    display: 'flex',
-    gap: '1rem',
-    color: '#888',
-    fontSize: '0.9rem'
-  },
-  loading: {
-    textAlign: 'center' as const,
-    fontSize: '1.2rem',
-    color: '#ccc'
-  },
-  error: {
-    color: '#ff4444',
-    textAlign: 'center' as const,
-    fontSize: '1.1rem'
-  },
-  emptyState: {
-    textAlign: 'center' as const,
-    color: '#ccc',
-    fontSize: '1.1rem'
-  },
-  problemsSection: {
-    marginTop: '2rem'
-  },
-  sectionTitle: {
-    color: '#00ff88',
-    marginBottom: '1.5rem',
-    fontSize: '1.8rem'
-  },
-  problemsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-    gap: '1.5rem'
-  },
-  problemCard: {
-    backgroundColor: '#1a1a1a',
-    padding: '1.5rem',
-    borderRadius: '8px',
-    border: '1px solid #333',
-    transition: 'transform 0.2s, border-color 0.2s'
-  },
-  problemHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '1rem'
-  },
-  problemTitle: {
-    color: '#00ff88',
-    margin: 0,
-    fontSize: '1.2rem',
-    flex: 1
-  },
-  scoreBadge: {
-    backgroundColor: '#0088ff',
-    color: '#fff',
-    padding: '0.25rem 0.5rem',
-    borderRadius: '4px',
-    fontSize: '0.8rem',
-    fontWeight: 'bold',
-    marginLeft: '0.5rem'
-  },
-  problemDescription: {
-    color: '#ccc',
-    marginBottom: '1rem',
-    lineHeight: '1.5'
-  },
-  problemActions: {
-    display: 'flex',
-    justifyContent: 'center'
-  },
-  solveButton: {
-    backgroundColor: '#00ff88',
-    color: '#000',
-    border: 'none',
-    padding: '0.75rem 1.5rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: 'bold',
-    textDecoration: 'none',
-    display: 'inline-block',
-    textAlign: 'center' as const,
-    transition: 'background-color 0.2s'
-  }
 };
 
 export default ContestDetail; 

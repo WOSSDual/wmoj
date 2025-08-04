@@ -10,6 +10,7 @@ import Contests from './pages/Contests';
 import ContestDetail from './pages/ContestDetail';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
+import './App.css';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -34,15 +35,19 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#0a0a0a',
-        color: '#fff'
-      }}>
-        Loading...
+      <div className="loading-screen">
+        <div className="loading-content">
+          <div className="loading-logo">
+            <span className="loading-logo-text">WMOJ</span>
+            <div className="loading-logo-glow"></div>
+          </div>
+          <div className="loading-spinner">
+            <div className="spinner-ring"></div>
+            <div className="spinner-ring"></div>
+            <div className="spinner-ring"></div>
+          </div>
+          <p className="loading-text">Loading your competitive programming experience...</p>
+        </div>
       </div>
     );
   }

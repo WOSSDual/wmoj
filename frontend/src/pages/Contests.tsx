@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import { supabase } from '../services/supabase';
+import './Contests.css';
 
 interface Contest {
   id: string;
@@ -107,61 +108,101 @@ const Contests: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={styles.container}>
+      <div className="contests-page">
         <Navigation />
-        <div style={styles.content}>
-          <div style={styles.loading}>Loading contests...</div>
+        <div className="page-container">
+          <div className="loading-container">
+            <div className="loading-spinner">
+              <div className="spinner-ring"></div>
+              <div className="spinner-ring"></div>
+              <div className="spinner-ring"></div>
+            </div>
+            <p className="loading-text">Loading contests...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
+    <div className="contests-page">
       <Navigation />
-      <div style={styles.content}>
-        <h1 style={styles.title}>Contests</h1>
+      <div className="page-container">
+        <div className="page-header">
+          <h1 className="page-title">Contests</h1>
+          <p className="page-subtitle">
+            Join exciting competitive programming contests and test your skills against others
+          </p>
+        </div>
         
         {contests.length === 0 ? (
-          <div style={styles.emptyState}>
-            <p>No active contests available.</p>
-            <p>Check back later for new contests!</p>
+          <div className="empty-state">
+            <div className="empty-icon">🏆</div>
+            <h3 className="empty-title">No Active Contests</h3>
+            <p className="empty-description">
+              There are currently no active contests available. Check back later for new competitions!
+            </p>
           </div>
         ) : (
-          <div style={styles.contestsGrid}>
-            {contests.map((contest) => (
-              <div key={contest.id} style={styles.contestCard}>
-                <div style={styles.contestHeader}>
-                  <h3 style={styles.contestTitle}>{contest.title}</h3>
-                  <span style={styles.statusBadge}>
+          <div className="contests-grid">
+            {contests.map((contest, index) => (
+              <div 
+                key={contest.id} 
+                className="contest-card card animate-scale-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className="contest-header">
+                  <h3 className="contest-title">{contest.title}</h3>
+                  <span className={`status-badge status-${getContestStatus(contest).toLowerCase()}`}>
                     {getContestStatus(contest)}
                   </span>
                 </div>
                 
-                <p style={styles.contestDescription}>{contest.description}</p>
+                <p className="contest-description">{contest.description}</p>
                 
-                <div style={styles.contestMeta}>
-                  <span>Started: {new Date(contest.start_time).toLocaleDateString()}</span>
+                <div className="contest-meta">
+                  <div className="meta-item">
+                    <span className="meta-icon">📅</span>
+                    <span className="meta-text">
+                      Started: {new Date(contest.start_time).toLocaleDateString()}
+                    </span>
+                  </div>
                   {contest.end_time && (
-                    <span>Ends: {new Date(contest.end_time).toLocaleDateString()}</span>
+                    <div className="meta-item">
+                      <span className="meta-icon">⏰</span>
+                      <span className="meta-text">
+                        Ends: {new Date(contest.end_time).toLocaleDateString()}
+                      </span>
+                    </div>
                   )}
                 </div>
 
-                <div style={styles.contestActions}>
+                <div className="contest-actions">
                   {isParticipating(contest.id) ? (
                     <Link
                       to={`/contest/${contest.id}`}
-                      style={styles.viewContestButton}
+                      className="btn btn-primary"
                     >
-                      View Contest
+                      <span>View Contest</span>
+                      <span>→</span>
                     </Link>
                   ) : (
                     <button
                       onClick={() => joinContest(contest.id)}
                       disabled={joining === contest.id}
-                      style={styles.joinButton}
+                      className={`btn btn-primary ${joining === contest.id ? 'loading' : ''}`}
                     >
-                      {joining === contest.id ? 'Joining...' : 'Join Contest'}
+                      {joining === contest.id ? (
+                        <>
+                          <div className="spinner"></div>
+                          <span>Joining...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Join Contest</span>
+                          <span>🏆</span>
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
@@ -172,106 +213,6 @@ const Contests: React.FC = () => {
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#0a0a0a',
-    color: '#fff'
-  },
-  content: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '2rem'
-  },
-  title: {
-    fontSize: '2.5rem',
-    color: '#00ff88',
-    marginBottom: '2rem'
-  },
-  loading: {
-    textAlign: 'center' as const,
-    fontSize: '1.2rem',
-    color: '#ccc'
-  },
-  emptyState: {
-    textAlign: 'center' as const,
-    color: '#ccc',
-    fontSize: '1.1rem'
-  },
-  contestsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
-    gap: '1.5rem'
-  },
-  contestCard: {
-    backgroundColor: '#1a1a1a',
-    padding: '1.5rem',
-    borderRadius: '8px',
-    border: '1px solid #333',
-    transition: 'transform 0.2s, border-color 0.2s'
-  },
-  contestHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '1rem'
-  },
-  contestTitle: {
-    color: '#00ff88',
-    margin: 0,
-    fontSize: '1.3rem'
-  },
-  statusBadge: {
-    backgroundColor: '#00ff88',
-    color: '#000',
-    padding: '0.25rem 0.5rem',
-    borderRadius: '4px',
-    fontSize: '0.8rem',
-    fontWeight: 'bold'
-  },
-  contestDescription: {
-    color: '#ccc',
-    marginBottom: '1rem',
-    lineHeight: '1.5'
-  },
-  contestMeta: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '0.25rem',
-    color: '#888',
-    fontSize: '0.9rem',
-    marginBottom: '1rem'
-  },
-  contestActions: {
-    display: 'flex',
-    justifyContent: 'center'
-  },
-  joinButton: {
-    backgroundColor: '#00ff88',
-    color: '#000',
-    border: 'none',
-    padding: '0.75rem 1.5rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: 'bold',
-    transition: 'background-color 0.2s'
-  },
-  viewContestButton: {
-    backgroundColor: '#0088ff',
-    color: '#fff',
-    border: 'none',
-    padding: '0.75rem 1.5rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: 'bold',
-    textDecoration: 'none',
-    display: 'inline-block',
-    textAlign: 'center' as const
-  }
 };
 
 export default Contests; 

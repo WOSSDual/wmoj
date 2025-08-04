@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import { supabase } from '../services/supabase';
+import './Problems.css';
 
 interface Problem {
   id: string;
@@ -14,6 +15,7 @@ interface Problem {
 const Problems: React.FC = () => {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchProblems();
@@ -39,46 +41,144 @@ const Problems: React.FC = () => {
     }
   };
 
+  const filteredProblems = problems.filter(problem =>
+    problem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    problem.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading) {
     return (
-      <div style={styles.container}>
+      <div className="problems-page">
         <Navigation />
-        <div style={styles.content}>
-          <div style={styles.loading}>Loading problems...</div>
+        <div className="page-container">
+          <div className="loading-container">
+            <div className="loading-spinner">
+              <div className="spinner-ring"></div>
+              <div className="spinner-ring"></div>
+              <div className="spinner-ring"></div>
+            </div>
+            <p className="loading-text">Loading problems...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
+    <div className="problems-page">
       <Navigation />
-      <div style={styles.content}>
-        <h1 style={styles.title}>Practice Problems</h1>
-        <p style={styles.subtitle}>Standalone problems for practice</p>
+      <div className="page-container">
+        <div className="page-header">
+          <h1 className="page-title">Practice Problems</h1>
+          <p className="page-subtitle">
+            Master your programming skills with our collection of carefully crafted challenges
+          </p>
+        </div>
+
+        <div className="search-section">
+          <div className="search-container">
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search problems by title or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button
+                className="clear-search"
+                onClick={() => setSearchTerm('')}
+                aria-label="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <div className="search-stats">
+            <span className="stat-text">
+              {filteredProblems.length} of {problems.length} problems
+            </span>
+          </div>
+        </div>
         
         {problems.length === 0 ? (
-          <div style={styles.emptyState}>
-            <p>No standalone problems available yet.</p>
-            <p>Check out the contests for problems to solve!</p>
+          <div className="empty-state">
+            <div className="empty-icon">📚</div>
+            <h3 className="empty-title">No Problems Available</h3>
+            <p className="empty-description">
+              No standalone problems are available yet. Check out the contests for problems to solve!
+            </p>
+            <Link to="/contests" className="btn btn-primary">
+              <span>Browse Contests</span>
+              <span>🏆</span>
+            </Link>
+          </div>
+        ) : filteredProblems.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">🔍</div>
+            <h3 className="empty-title">No Results Found</h3>
+            <p className="empty-description">
+              No problems match your search criteria. Try adjusting your search terms.
+            </p>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setSearchTerm('')}
+            >
+              <span>Clear Search</span>
+              <span>↺</span>
+            </button>
           </div>
         ) : (
-          <div style={styles.problemsGrid}>
-            {problems.map((problem) => (
+          <div className="problems-grid">
+            {filteredProblems.map((problem, index) => (
               <Link
                 key={problem.id}
                 to={`/problem/${problem.id}`}
-                style={styles.problemCard}
+                className="problem-card card animate-scale-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <h3 style={styles.problemTitle}>{problem.title}</h3>
-                <p style={styles.problemDescription}>
-                  {problem.description.length > 150
-                    ? `${problem.description.substring(0, 150)}...`
-                    : problem.description}
-                </p>
-                <div style={styles.problemMeta}>
-                  <span>Created: {new Date(problem.created_at).toLocaleDateString()}</span>
+                <div className="problem-header">
+                  <h3 className="problem-title">{problem.title}</h3>
+                  <div className="problem-badge">
+                    <span className="badge-icon">💻</span>
+                    <span className="badge-text">Practice</span>
+                  </div>
                 </div>
+                
+                <p className="problem-description">
+                  {(() => {
+                    // Strip markdown formatting for preview
+                    const plainText = problem.description
+                      .replace(/#{1,6}\s+/g, '') // Remove headers
+                      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+                      .replace(/\*(.*?)\*/g, '$1') // Remove italic
+                      .replace(/`(.*?)`/g, '$1') // Remove inline code
+                      .replace(/\$\$(.*?)\$\$/g, '') // Remove block math
+                      .replace(/\$(.*?)\$/g, '') // Remove inline math
+                      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
+                      .replace(/\n+/g, ' ') // Replace newlines with spaces
+                      .trim();
+                    
+                    return plainText.length > 150
+                      ? `${plainText.substring(0, 150)}...`
+                      : plainText;
+                  })()}
+                </p>
+                
+                <div className="problem-footer">
+                  <div className="problem-meta">
+                    <span className="meta-icon">📅</span>
+                    <span className="meta-text">
+                      {new Date(problem.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="problem-arrow">
+                    <span>→</span>
+                  </div>
+                </div>
+                
+                <div className="problem-glow"></div>
               </Link>
             ))}
           </div>
@@ -86,69 +186,6 @@ const Problems: React.FC = () => {
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#0a0a0a',
-    color: '#fff'
-  },
-  content: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '2rem'
-  },
-  title: {
-    fontSize: '2.5rem',
-    color: '#00ff88',
-    marginBottom: '0.5rem'
-  },
-  subtitle: {
-    fontSize: '1.1rem',
-    color: '#ccc',
-    marginBottom: '2rem'
-  },
-  loading: {
-    textAlign: 'center' as const,
-    fontSize: '1.2rem',
-    color: '#ccc'
-  },
-  emptyState: {
-    textAlign: 'center' as const,
-    color: '#ccc',
-    fontSize: '1.1rem'
-  },
-  problemsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-    gap: '1.5rem'
-  },
-  problemCard: {
-    backgroundColor: '#1a1a1a',
-    padding: '1.5rem',
-    borderRadius: '8px',
-    border: '1px solid #333',
-    textDecoration: 'none',
-    color: '#fff',
-    transition: 'transform 0.2s, border-color 0.2s',
-    cursor: 'pointer',
-    display: 'block'
-  },
-  problemTitle: {
-    color: '#00ff88',
-    marginBottom: '0.5rem',
-    fontSize: '1.3rem'
-  },
-  problemDescription: {
-    color: '#ccc',
-    marginBottom: '1rem',
-    lineHeight: '1.5'
-  },
-  problemMeta: {
-    color: '#888',
-    fontSize: '0.9rem'
-  }
 };
 
 export default Problems; 

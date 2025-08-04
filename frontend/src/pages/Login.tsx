@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import './Login.css';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -143,172 +144,135 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.formContainer}>
-        <h1 style={styles.title}>WMOJ</h1>
-        <h2 style={styles.subtitle}>Welcome to WMOJ, the offical WOSS CP Website!</h2>
-        
-        <div style={styles.toggleContainer}>
-          <button
-            onClick={() => setIsSignUp(false)}
-            style={isSignUp ? styles.toggleButton : styles.activeToggleButton}
-          >
-            Login
-          </button>
-          <button
-            onClick={() => setIsSignUp(true)}
-            style={isSignUp ? styles.activeToggleButton : styles.toggleButton}
-          >
-            Sign Up
-          </button>
-        </div>
+    <div className="login-page">
+      <div className="login-background">
+        <div className="floating-shape shape-1"></div>
+        <div className="floating-shape shape-2"></div>
+        <div className="floating-shape shape-3"></div>
+        <div className="floating-shape shape-4"></div>
+      </div>
+      
+      <div className="login-container">
+        <div className="login-card glass">
+          <div className="login-header">
+            <h1 className="login-title">
+              <span className="gradient-text">WMOJ</span>
+            </h1>
+            <p className="login-subtitle">
+              Welcome to the official White Oaks S.S Competitive Programming Platform
+            </p>
+          </div>
 
-        <form style={styles.form}>
-          {isSignUp && (
-            <input
-              type="text"
-              placeholder="Username (3-20 characters)"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              style={styles.input}
-              required={isSignUp}
-            />
-          )}
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-            required
-          />
-          
-          {error && <div style={styles.error}>{error}</div>}
-          
-          <button
-            type="submit"
-            onClick={isSignUp ? handleSignUp : handleLogin}
-            disabled={isLoading}
-            style={styles.submitButton}
-          >
-            {isLoading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Login')}
-          </button>
-        </form>
+          <div className="auth-toggle">
+            <button
+              className={`toggle-btn ${!isSignUp ? 'active' : ''}`}
+              onClick={() => setIsSignUp(false)}
+            >
+              <span className="toggle-icon">🔐</span>
+              <span className="toggle-text">Login</span>
+            </button>
+            <button
+              className={`toggle-btn ${isSignUp ? 'active' : ''}`}
+              onClick={() => setIsSignUp(true)}
+            >
+              <span className="toggle-icon">✨</span>
+              <span className="toggle-text">Sign Up</span>
+            </button>
+          </div>
+
+          <form className="login-form" onSubmit={isSignUp ? handleSignUp : handleLogin}>
+            {isSignUp && (
+              <div className="form-group">
+                <label className="form-label">Username</label>
+                <div className="input-wrapper">
+                  <span className="input-icon">👤</span>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Choose a username (3-20 characters)"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required={isSignUp}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <div className="input-wrapper">
+                <span className="input-icon">📧</span>
+                <input
+                  type="email"
+                  className="form-input"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <div className="input-wrapper">
+                <span className="input-icon">🔒</span>
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className={`error-message ${error.includes('Check your email') ? 'success' : ''}`}>
+                <span className="error-icon">
+                  {error.includes('Check your email') ? '✅' : '⚠️'}
+                </span>
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className={`submit-btn ${isLoading ? 'loading' : ''}`}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <div className="spinner"></div>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
+                  <span className="btn-icon">
+                    {isSignUp ? '🚀' : '→'}
+                  </span>
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="login-footer">
+            <p className="footer-text">
+              {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+              <button
+                className="footer-link"
+                onClick={() => setIsSignUp(!isSignUp)}
+              >
+                {isSignUp ? ' Sign in here' : ' Sign up here'}
+              </button>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0a0a0a',
-    color: '#fff'
-  },
-  formContainer: {
-    backgroundColor: '#1a1a1a',
-    padding: '2rem',
-    borderRadius: '8px',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
-    width: '100%',
-    maxWidth: '400px'
-  },
-  title: {
-    textAlign: 'center' as const,
-    color: '#00ff88',
-    marginBottom: '0.5rem',
-    fontSize: '2rem'
-  },
-  subtitle: {
-    textAlign: 'center' as const,
-    color: '#ccc',
-    marginBottom: '2rem',
-    fontSize: '1rem'
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '1rem'
-  },
-  input: {
-    padding: '0.75rem',
-    borderRadius: '4px',
-    border: '1px solid #333',
-    backgroundColor: '#2a2a2a',
-    color: '#fff',
-    fontSize: '1rem'
-  },
-  error: {
-    color: '#ff4444',
-    textAlign: 'center' as const,
-    fontSize: '0.9rem'
-  },
-  buttonContainer: {
-    display: 'flex',
-    gap: '1rem',
-    marginTop: '1rem'
-  },
-  loginButton: {
-    flex: 1,
-    padding: '0.75rem',
-    backgroundColor: '#00ff88',
-    color: '#000',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: 'bold'
-  },
-  toggleContainer: {
-    display: 'flex',
-    marginBottom: '1.5rem',
-    border: '1px solid #333',
-    borderRadius: '4px',
-    overflow: 'hidden'
-  },
-  toggleButton: {
-    flex: 1,
-    padding: '0.75rem',
-    backgroundColor: 'transparent',
-    color: '#ccc',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    transition: 'all 0.2s'
-  },
-  activeToggleButton: {
-    flex: 1,
-    padding: '0.75rem',
-    backgroundColor: '#00ff88',
-    color: '#000',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: 'bold',
-    transition: 'all 0.2s'
-  },
-  submitButton: {
-    width: '100%',
-    padding: '0.75rem',
-    backgroundColor: '#00ff88',
-    color: '#000',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: 'bold'
-  }
 };
 
 export default Login; 

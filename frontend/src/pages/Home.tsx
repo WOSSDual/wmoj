@@ -1,68 +1,99 @@
 import React from 'react';
 import Navigation from '../components/Navigation';
+import './Home.css';
 
 const Home: React.FC = () => {
+
+
+  const stats = [
+    { label: 'Problems Solved', value: '150+', icon: '✅' },
+    { label: 'Active Users', value: '500+', icon: '👥' },
+    { label: 'Contests Hosted', value: '25+', icon: '🎯' },
+    { label: 'Success Rate', value: '95%', icon: '📈' }
+  ];
+
   return (
-    <div style={styles.container}>
+    <div className="home-page">
       <Navigation />
-      <div style={styles.content}>
-        <h1 style={styles.title}>Welcome to WMOJ</h1>
-        <p style={styles.subtitle}>
-          Your competitive programming platform for solving challenging problems
-        </p>
-        <div style={styles.features}>
-          <div style={styles.feature}>
-            <h3>Solve Problems</h3>
-            <p>Access a collection of carefully crafted programming challenges</p>
-          </div>
-          <div style={styles.feature}>
-            <h3>Submit Solutions</h3>
-            <p>Upload your Python code and get instant feedback</p>
-          </div>
-          <div style={styles.feature}>
-            <h3>Track Progress</h3>
-            <p>Monitor your performance and improve your skills</p>
+      
+      {/* Hero Section */}
+      <section className="hero-section">
+        <div className="hero-content">
+          <h1 className="hero-title animate-fade-in">
+            Welcome to <span className="gradient-text">WMOJ</span>
+          </h1>
+          <p className="hero-subtitle animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            Your ultimate competitive programming platform for solving challenging problems, 
+            competing with peers, and mastering algorithms.
+          </p>
+          <div className="hero-actions animate-fade-in" style={{ animationDelay: '0.4s' }}>
+            <a href="/problems" className="btn btn-primary">
+              <span>Start Solving</span>
+              <span>→</span>
+            </a>
+            <a href="/contests" className="btn btn-secondary">
+              <span>Join Contest</span>
+              <span>🏆</span>
+            </a>
           </div>
         </div>
-      </div>
+        
+        <div className="hero-visual">
+          <div className="floating-card card-1">
+            <div className="card-icon">💻</div>
+            <div className="card-text">Python</div>
+          </div>
+          <div className="floating-card card-2">
+            <div className="card-icon">⚡</div>
+            <div className="card-text">Fast</div>
+          </div>
+          <div className="floating-card card-3">
+            <div className="card-icon">🎯</div>
+            <div className="card-text">Accurate</div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="stats-section">
+        <div className="stats-grid">
+          {stats.map((stat, index) => (
+            <div 
+              key={stat.label} 
+              className="stat-card card animate-scale-in"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <div className="stat-icon">{stat.icon}</div>
+              <div className="stat-value">{stat.value}</div>
+              <div className="stat-label">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+
+
+      {/* CTA Section */}
+      <section className="cta-section">
+        <div className="cta-content">
+          <h2 className="cta-title">Ready to Start Your Journey?</h2>
+          <p className="cta-subtitle">
+            Join thousands of programmers who are already improving their skills on WMOJ.
+          </p>
+          <div className="cta-actions">
+            <a href="/problems" className="btn btn-primary btn-large">
+              <span>Explore Problems</span>
+              <span>🚀</span>
+            </a>
+            <a href="/contests" className="btn btn-secondary btn-large">
+              <span>View Contests</span>
+              <span>🏆</span>
+            </a>
+          </div>
+        </div>
+      </section>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#0a0a0a',
-    color: '#fff'
-  },
-  content: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '4rem 2rem',
-    textAlign: 'center' as const
-  },
-  title: {
-    fontSize: '3rem',
-    color: '#00ff88',
-    marginBottom: '1rem'
-  },
-  subtitle: {
-    fontSize: '1.2rem',
-    color: '#ccc',
-    marginBottom: '3rem'
-  },
-  features: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '2rem',
-    marginTop: '3rem'
-  },
-  feature: {
-    backgroundColor: '#1a1a1a',
-    padding: '2rem',
-    borderRadius: '8px',
-    border: '1px solid #333'
-  }
 };
 
 export default Home; 

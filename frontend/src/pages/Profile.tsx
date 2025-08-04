@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navigation from '../components/Navigation';
 import { supabase } from '../services/supabase';
+import './Profile.css';
 
 interface UserProfile {
   user_id: string;
@@ -111,10 +112,17 @@ const Profile: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={styles.container}>
+      <div className="profile-page">
         <Navigation />
-        <div style={styles.content}>
-          <div style={styles.loading}>Loading profile...</div>
+        <div className="page-container">
+          <div className="loading-container">
+            <div className="loading-spinner">
+              <div className="spinner-ring"></div>
+              <div className="spinner-ring"></div>
+              <div className="spinner-ring"></div>
+            </div>
+            <p className="loading-text">Loading profile...</p>
+          </div>
         </div>
       </div>
     );
@@ -122,10 +130,14 @@ const Profile: React.FC = () => {
 
   if (error && !profile) {
     return (
-      <div style={styles.container}>
+      <div className="profile-page">
         <Navigation />
-        <div style={styles.content}>
-          <div style={styles.error}>{error}</div>
+        <div className="page-container">
+          <div className="error-state">
+            <div className="error-icon">⚠️</div>
+            <h3 className="error-title">Error Loading Profile</h3>
+            <p className="error-description">{error}</p>
+          </div>
         </div>
       </div>
     );
@@ -134,197 +146,114 @@ const Profile: React.FC = () => {
   if (!profile) return null;
 
   return (
-    <div style={styles.container}>
+    <div className="profile-page">
       <Navigation />
-      <div style={styles.content}>
-        <h1 style={styles.title}>Profile</h1>
+      <div className="page-container">
+        <div className="page-header">
+          <h1 className="page-title">Profile</h1>
+          <p className="page-subtitle">
+            Manage your account settings and preferences
+          </p>
+        </div>
         
-        <div style={styles.profileSection}>
-          <h2 style={styles.sectionTitle}>Account Information</h2>
+        <div className="profile-section card">
+          <div className="section-header">
+            <h2 className="section-title">Account Information</h2>
+          </div>
           
-          <div style={styles.infoGrid}>
-            <div style={styles.infoItem}>
-              <label style={styles.label}>Username</label>
-              <div style={styles.usernameDisplay}>
-                <span style={styles.currentUsername}>{profile.username}</span>
-                <button
-                  onClick={() => setNewUsername(profile.username)}
-                  style={styles.editButton}
-                >
-                  Edit
-                </button>
+          <div className="info-grid">
+            <div className="info-item">
+              <div className="info-icon">👤</div>
+              <div className="info-content">
+                <label className="info-label">Username</label>
+                <div className="username-display">
+                  <span className="current-username">{profile.username}</span>
+                  <button
+                    onClick={() => setNewUsername(profile.username)}
+                    className="btn btn-secondary edit-btn"
+                  >
+                    <span>Edit</span>
+                    <span>✏️</span>
+                  </button>
+                </div>
               </div>
             </div>
             
-            <div style={styles.infoItem}>
-              <label style={styles.label}>Member Since</label>
-              <span style={styles.value}>
-                {new Date(profile.created_at).toLocaleDateString()}
-              </span>
+            <div className="info-item">
+              <div className="info-icon">📅</div>
+              <div className="info-content">
+                <label className="info-label">Member Since</label>
+                <span className="info-value">
+                  {new Date(profile.created_at).toLocaleDateString()}
+                </span>
+              </div>
             </div>
           </div>
 
           {newUsername !== profile.username && (
-            <div style={styles.updateSection}>
-              <h3 style={styles.subsectionTitle}>Update Username</h3>
-              <div style={styles.updateForm}>
-                <input
-                  type="text"
-                  value={newUsername}
-                  onChange={(e) => setNewUsername(e.target.value)}
-                  placeholder="Enter new username"
-                  style={styles.input}
-                  maxLength={20}
-                />
+            <div className="update-section">
+              <div className="section-header">
+                <h3 className="section-title">Update Username</h3>
+                <p className="section-subtitle">
+                  Choose a new username for your account
+                </p>
+              </div>
+              
+              <div className="update-form">
+                <div className="form-group">
+                  <input
+                    type="text"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    placeholder="Enter new username"
+                    className="form-input"
+                    maxLength={20}
+                  />
+                </div>
+                
                 <button
                   onClick={handleUpdateUsername}
                   disabled={updating}
-                  style={styles.updateButton}
+                  className={`btn btn-primary update-btn ${updating ? 'loading' : ''}`}
                 >
-                  {updating ? 'Updating...' : 'Update Username'}
+                  {updating ? (
+                    <>
+                      <div className="spinner"></div>
+                      <span>Updating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Update Username</span>
+                      <span>✅</span>
+                    </>
+                  )}
                 </button>
               </div>
-              <p style={styles.helpText}>
-                Username must be 3-20 characters, letters, numbers, and underscores only.
-              </p>
+              
+              <div className="help-text">
+                <span className="help-icon">💡</span>
+                <span>Username must be 3-20 characters, letters, numbers, and underscores only.</span>
+              </div>
             </div>
           )}
 
           {message && (
-            <div style={styles.success}>{message}</div>
+            <div className="success-message">
+              <span className="success-icon">✅</span>
+              <span className="success-text">{message}</span>
+            </div>
           )}
           
           {error && (
-            <div style={styles.error}>{error}</div>
+            <div className="error-message">
+              <span className="error-icon">⚠️</span>
+              <span className="error-text">{error}</span>
+            </div>
           )}
         </div>
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#0a0a0a',
-    color: '#fff'
-  },
-  content: {
-    maxWidth: '800px',
-    margin: '0 auto',
-    padding: '2rem'
-  },
-  title: {
-    fontSize: '2.5rem',
-    color: '#00ff88',
-    marginBottom: '2rem'
-  },
-  loading: {
-    textAlign: 'center' as const,
-    fontSize: '1.2rem',
-    color: '#ccc'
-  },
-  error: {
-    color: '#ff4444',
-    textAlign: 'center' as const,
-    fontSize: '1.1rem'
-  },
-  profileSection: {
-    backgroundColor: '#1a1a1a',
-    padding: '2rem',
-    borderRadius: '8px',
-    border: '1px solid #333'
-  },
-  sectionTitle: {
-    color: '#00ff88',
-    marginBottom: '1.5rem',
-    fontSize: '1.8rem'
-  },
-  infoGrid: {
-    display: 'grid',
-    gap: '1.5rem',
-    marginBottom: '2rem'
-  },
-  infoItem: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '0.5rem'
-  },
-  label: {
-    color: '#00ff88',
-    fontSize: '1rem',
-    fontWeight: 'bold'
-  },
-  value: {
-    color: '#fff',
-    fontSize: '1.1rem'
-  },
-  usernameDisplay: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem'
-  },
-  currentUsername: {
-    color: '#fff',
-    fontSize: '1.1rem',
-    fontWeight: 'bold'
-  },
-  editButton: {
-    backgroundColor: '#0088ff',
-    color: '#fff',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '0.9rem'
-  },
-  updateSection: {
-    borderTop: '1px solid #333',
-    paddingTop: '1.5rem',
-    marginTop: '1.5rem'
-  },
-  subsectionTitle: {
-    color: '#00ff88',
-    marginBottom: '1rem',
-    fontSize: '1.3rem'
-  },
-  updateForm: {
-    display: 'flex',
-    gap: '1rem',
-    marginBottom: '1rem'
-  },
-  input: {
-    flex: 1,
-    padding: '0.75rem',
-    backgroundColor: '#2a2a2a',
-    border: '1px solid #333',
-    borderRadius: '4px',
-    color: '#fff',
-    fontSize: '1rem'
-  },
-  updateButton: {
-    padding: '0.75rem 1.5rem',
-    backgroundColor: '#00ff88',
-    color: '#000',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: 'bold'
-  },
-  helpText: {
-    color: '#888',
-    fontSize: '0.9rem',
-    marginTop: '0.5rem'
-  },
-  success: {
-    color: '#00ff88',
-    textAlign: 'center' as const,
-    padding: '0.5rem',
-    backgroundColor: 'rgba(0, 255, 136, 0.1)',
-    borderRadius: '4px',
-    marginTop: '1rem'
-  }
 };
 
 export default Profile; 

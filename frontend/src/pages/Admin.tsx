@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
+import MarkdownRenderer from '../components/MarkdownRenderer';
+import './Admin.css';
 
 interface TestCase {
   input: string;
@@ -23,8 +25,6 @@ interface Problem {
   contest_id: string | null;
   created_at: string;
 }
-
-
 
 type TabType = 'create-contest' | 'create-problem' | 'manage-contests' | 'manage-problems';
 
@@ -259,8 +259,6 @@ const Admin: React.FC = () => {
     }
   };
 
-
-
   const startEditContest = (contest: Contest) => {
     setEditingContest(contest);
     setEditContestTitle(contest.title);
@@ -341,88 +339,120 @@ const Admin: React.FC = () => {
   };
 
   const renderCreateContest = () => (
-    <div>
-      <h2 style={styles.sectionTitle}>Create New Contest</h2>
-      <form onSubmit={handleCreateContest} style={styles.form}>
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Contest Title *</label>
+    <div className="admin-section">
+      <div className="section-header">
+        <h2 className="section-title">Create New Contest</h2>
+        <p className="section-subtitle">
+          Set up a new competitive programming contest
+        </p>
+      </div>
+      
+      <form onSubmit={handleCreateContest} className="admin-form">
+        <div className="form-group">
+          <label className="form-label">Contest Title *</label>
           <input
             type="text"
             value={contestTitle}
             onChange={(e) => setContestTitle(e.target.value)}
-            style={styles.input}
+            className="form-input"
             placeholder="Enter contest title"
             required
           />
         </div>
 
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Contest Description *</label>
+        <div className="form-group">
+          <label className="form-label">Contest Description *</label>
           <textarea
             value={contestDescription}
             onChange={(e) => setContestDescription(e.target.value)}
-            style={styles.textarea}
+            className="form-textarea"
             placeholder="Enter contest description"
             rows={4}
             required
           />
         </div>
 
-        <div style={styles.formGroup}>
-          <label style={styles.label}>End Time (Optional)</label>
+        <div className="form-group">
+          <label className="form-label">End Time (Optional)</label>
           <input
             type="datetime-local"
             value={contestEndTime}
             onChange={(e) => setContestEndTime(e.target.value)}
-            style={styles.input}
+            className="form-input"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          style={styles.submitButton}
+          className={`btn btn-primary submit-btn ${loading ? 'loading' : ''}`}
         >
-          {loading ? 'Creating Contest...' : 'Create Contest'}
+          {loading ? (
+            <>
+              <div className="spinner"></div>
+              <span>Creating Contest...</span>
+            </>
+          ) : (
+            <>
+              <span>Create Contest</span>
+              <span>🏆</span>
+            </>
+          )}
         </button>
       </form>
     </div>
   );
 
   const renderCreateProblem = () => (
-    <div>
-      <h2 style={styles.sectionTitle}>Create New Problem</h2>
-      <form onSubmit={handleCreateProblem} style={styles.form}>
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Problem Title *</label>
+    <div className="admin-section">
+      <div className="section-header">
+        <h2 className="section-title">Create New Problem</h2>
+        <p className="section-subtitle">
+          Add a new programming challenge with test cases
+        </p>
+      </div>
+      
+      <form onSubmit={handleCreateProblem} className="admin-form">
+        <div className="form-group">
+          <label className="form-label">Problem Title *</label>
           <input
             type="text"
             value={problemTitle}
             onChange={(e) => setProblemTitle(e.target.value)}
-            style={styles.input}
+            className="form-input"
             placeholder="Enter problem title"
             required
           />
         </div>
 
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Problem Description *</label>
+        <div className="form-group">
+          <label className="form-label">Problem Description *</label>
+          <div className="markdown-help">
+            <span className="help-icon">📝</span>
+            <span>Supports Markdown and LaTeX. Use $...$ for inline math and $$...$$ for block math.</span>
+          </div>
           <textarea
             value={problemDescription}
             onChange={(e) => setProblemDescription(e.target.value)}
-            style={styles.textarea}
-            placeholder="Enter problem description"
-            rows={6}
+            className="form-textarea"
+            placeholder="Enter problem description using Markdown and LaTeX..."
+            rows={8}
             required
           />
+          {problemDescription && (
+            <div className="markdown-preview">
+              <h4 className="preview-title">Preview:</h4>
+              <MarkdownRenderer content={problemDescription} />
+            </div>
+          )}
         </div>
 
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Assign to Contest (Optional)</label>
+        <div className="form-group">
+          <label className="form-label">Assign to Contest (Optional)</label>
           <select
             value={selectedContestId}
             onChange={(e) => setSelectedContestId(e.target.value)}
-            style={styles.input}
+            className="form-input"
           >
             <option value="">Standalone Problem</option>
             {contests.map(contest => (
@@ -433,52 +463,54 @@ const Admin: React.FC = () => {
           </select>
         </div>
 
-        <div style={styles.testCasesSection}>
-          <div style={styles.testCasesHeader}>
-            <h3 style={styles.sectionTitle}>Test Cases *</h3>
+        <div className="test-cases-section">
+          <div className="test-cases-header">
+            <h3 className="section-title">Test Cases *</h3>
             <button
               type="button"
               onClick={addTestCase}
-              style={styles.addButton}
+              className="btn btn-secondary add-btn"
             >
-              Add Test Case
+              <span>Add Test Case</span>
+              <span>➕</span>
             </button>
           </div>
 
           {testCases.map((testCase, index) => (
-            <div key={index} style={styles.testCase}>
-              <div style={styles.testCaseHeader}>
-                <h4>Test Case {index + 1}</h4>
+            <div key={index} className="test-case card">
+              <div className="test-case-header">
+                <h4 className="test-case-title">Test Case {index + 1}</h4>
                 {testCases.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeTestCase(index)}
-                    style={styles.removeButton}
+                    className="btn btn-danger remove-btn"
                   >
-                    Remove
+                    <span>Remove</span>
+                    <span>🗑️</span>
                   </button>
                 )}
               </div>
               
-              <div style={styles.testCaseInputs}>
-                <div style={styles.inputGroup}>
-                  <label style={styles.smallLabel}>Input:</label>
+              <div className="test-case-inputs">
+                <div className="input-group">
+                  <label className="form-label">Input:</label>
                   <textarea
                     value={testCase.input}
                     onChange={(e) => updateTestCase(index, 'input', e.target.value)}
-                    style={styles.smallTextarea}
+                    className="form-textarea small"
                     placeholder="Enter test input"
                     rows={3}
                     required
                   />
                 </div>
                 
-                <div style={styles.inputGroup}>
-                  <label style={styles.smallLabel}>Expected Output:</label>
+                <div className="input-group">
+                  <label className="form-label">Expected Output:</label>
                   <textarea
                     value={testCase.expected_output}
                     onChange={(e) => updateTestCase(index, 'expected_output', e.target.value)}
-                    style={styles.smallTextarea}
+                    className="form-textarea small"
                     placeholder="Enter expected output"
                     rows={3}
                     required
@@ -492,96 +524,129 @@ const Admin: React.FC = () => {
         <button
           type="submit"
           disabled={loading}
-          style={styles.submitButton}
+          className={`btn btn-primary submit-btn ${loading ? 'loading' : ''}`}
         >
-          {loading ? 'Creating Problem...' : 'Create Problem'}
+          {loading ? (
+            <>
+              <div className="spinner"></div>
+              <span>Creating Problem...</span>
+            </>
+          ) : (
+            <>
+              <span>Create Problem</span>
+              <span>💻</span>
+            </>
+          )}
         </button>
       </form>
     </div>
   );
 
   const renderManageContests = () => (
-    <div>
-      <h2 style={styles.sectionTitle}>Manage Contests</h2>
+    <div className="admin-section">
+      <div className="section-header">
+        <h2 className="section-title">Manage Contests</h2>
+        <p className="section-subtitle">
+          View, edit, and manage existing contests
+        </p>
+      </div>
+      
       {contests.length === 0 ? (
-        <p style={styles.emptyMessage}>No contests created yet.</p>
+        <div className="empty-state">
+          <div className="empty-icon">🏆</div>
+          <h3 className="empty-title">No Contests Created</h3>
+          <p className="empty-description">
+            Create your first contest to get started!
+          </p>
+        </div>
       ) : (
-        <div style={styles.listContainer}>
+        <div className="list-container">
           {contests.map(contest => (
-            <div key={contest.id} style={styles.listItem}>
+            <div key={contest.id} className="list-item card">
               {editingContest?.id === contest.id ? (
-                <div style={styles.editForm}>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>Title *</label>
+                <div className="edit-form">
+                  <div className="form-group">
+                    <label className="form-label">Title *</label>
                     <input
                       type="text"
                       value={editContestTitle}
                       onChange={(e) => setEditContestTitle(e.target.value)}
-                      style={styles.input}
+                      className="form-input"
                       required
                     />
                   </div>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>Description *</label>
+                  <div className="form-group">
+                    <label className="form-label">Description *</label>
                     <textarea
                       value={editContestDescription}
                       onChange={(e) => setEditContestDescription(e.target.value)}
-                      style={styles.textarea}
+                      className="form-textarea"
                       rows={3}
                       required
                     />
                   </div>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>End Time</label>
+                  <div className="form-group">
+                    <label className="form-label">End Time</label>
                     <input
                       type="datetime-local"
                       value={editContestEndTime}
                       onChange={(e) => setEditContestEndTime(e.target.value)}
-                      style={styles.input}
+                      className="form-input"
                     />
                   </div>
-                  <div style={styles.editActions}>
-                    <button onClick={handleUpdateContest} style={styles.saveButton}>
-                      Save
+                  <div className="edit-actions">
+                    <button onClick={handleUpdateContest} className="btn btn-primary">
+                      <span>Save</span>
+                      <span>✅</span>
                     </button>
-                    <button onClick={cancelEdit} style={styles.cancelButton}>
-                      Cancel
+                    <button onClick={cancelEdit} className="btn btn-secondary">
+                      <span>Cancel</span>
+                      <span>❌</span>
                     </button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div style={styles.listItemHeader}>
-                    <h3>{contest.title}</h3>
-                    <span style={contest.is_active ? styles.activeBadge : styles.inactiveBadge}>
+                  <div className="list-item-header">
+                    <h3 className="list-item-title">{contest.title}</h3>
+                    <span className={`status-badge ${contest.is_active ? 'status-active' : 'status-inactive'}`}>
                       {contest.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
-                  <p>{contest.description}</p>
-                  <div style={styles.listItemMeta}>
-                    <span>Created: {new Date(contest.created_at).toLocaleDateString()}</span>
+                  <p className="list-item-description">{contest.description}</p>
+                  <div className="list-item-meta">
+                    <span className="meta-item">
+                      <span className="meta-icon">📅</span>
+                      <span>Created: {new Date(contest.created_at).toLocaleDateString()}</span>
+                    </span>
                     {contest.end_time && (
-                      <span>Ends: {new Date(contest.end_time).toLocaleDateString()}</span>
+                      <span className="meta-item">
+                        <span className="meta-icon">⏰</span>
+                        <span>Ends: {new Date(contest.end_time).toLocaleDateString()}</span>
+                      </span>
                     )}
                   </div>
-                  <div style={styles.listItemActions}>
+                  <div className="list-item-actions">
                     <button
                       onClick={() => toggleContestStatus(contest.id, contest.is_active)}
-                      style={contest.is_active ? styles.deactivateButton : styles.activateButton}
+                      className={`btn ${contest.is_active ? 'btn-danger' : 'btn-primary'}`}
                     >
-                      {contest.is_active ? 'Deactivate' : 'Activate'}
+                      <span>{contest.is_active ? 'Deactivate' : 'Activate'}</span>
+                      <span>{contest.is_active ? '⏸️' : '▶️'}</span>
                     </button>
                     <button
                       onClick={() => startEditContest(contest)}
-                      style={styles.editButton}
+                      className="btn btn-secondary"
                     >
-                      Edit
+                      <span>Edit</span>
+                      <span>✏️</span>
                     </button>
                     <button
                       onClick={() => deleteContest(contest.id)}
-                      style={styles.deleteButton}
+                      className="btn btn-danger"
                     >
-                      Delete
+                      <span>Delete</span>
+                      <span>🗑️</span>
                     </button>
                   </div>
                 </>
@@ -594,42 +659,64 @@ const Admin: React.FC = () => {
   );
 
   const renderManageProblems = () => (
-    <div>
-      <h2 style={styles.sectionTitle}>Manage Problems</h2>
+    <div className="admin-section">
+      <div className="section-header">
+        <h2 className="section-title">Manage Problems</h2>
+        <p className="section-subtitle">
+          View, edit, and manage existing problems
+        </p>
+      </div>
+      
       {problems.length === 0 ? (
-        <p style={styles.emptyMessage}>No problems created yet.</p>
+        <div className="empty-state">
+          <div className="empty-icon">💻</div>
+          <h3 className="empty-title">No Problems Created</h3>
+          <p className="empty-description">
+            Create your first problem to get started!
+          </p>
+        </div>
       ) : (
-        <div style={styles.listContainer}>
+        <div className="list-container">
           {problems.map(problem => (
-            <div key={problem.id} style={styles.listItem}>
+            <div key={problem.id} className="list-item card">
               {editingProblem?.id === problem.id ? (
-                <div style={styles.editForm}>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>Title *</label>
+                <div className="edit-form">
+                  <div className="form-group">
+                    <label className="form-label">Title *</label>
                     <input
                       type="text"
                       value={editProblemTitle}
                       onChange={(e) => setEditProblemTitle(e.target.value)}
-                      style={styles.input}
+                      className="form-input"
                       required
                     />
                   </div>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>Description *</label>
+                  <div className="form-group">
+                    <label className="form-label">Description *</label>
+                    <div className="markdown-help">
+                      <span className="help-icon">📝</span>
+                      <span>Supports Markdown and LaTeX. Use $...$ for inline math and $$...$$ for block math.</span>
+                    </div>
                     <textarea
                       value={editProblemDescription}
                       onChange={(e) => setEditProblemDescription(e.target.value)}
-                      style={styles.textarea}
-                      rows={4}
+                      className="form-textarea"
+                      rows={6}
                       required
                     />
+                    {editProblemDescription && (
+                      <div className="markdown-preview">
+                        <h4 className="preview-title">Preview:</h4>
+                        <MarkdownRenderer content={editProblemDescription} />
+                      </div>
+                    )}
                   </div>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>Assign to Contest</label>
+                  <div className="form-group">
+                    <label className="form-label">Assign to Contest</label>
                     <select
                       value={editProblemContestId}
                       onChange={(e) => setEditProblemContestId(e.target.value)}
-                      style={styles.input}
+                      className="form-input"
                     >
                       <option value="">Standalone Problem</option>
                       {contests.map(contest => (
@@ -639,39 +726,46 @@ const Admin: React.FC = () => {
                       ))}
                     </select>
                   </div>
-                  <div style={styles.editActions}>
-                    <button onClick={handleUpdateProblem} style={styles.saveButton}>
-                      Save
+                  <div className="edit-actions">
+                    <button onClick={handleUpdateProblem} className="btn btn-primary">
+                      <span>Save</span>
+                      <span>✅</span>
                     </button>
-                    <button onClick={cancelEdit} style={styles.cancelButton}>
-                      Cancel
+                    <button onClick={cancelEdit} className="btn btn-secondary">
+                      <span>Cancel</span>
+                      <span>❌</span>
                     </button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div style={styles.listItemHeader}>
-                    <h3>{problem.title}</h3>
-                    <span style={problem.contest_id ? styles.contestBadge : styles.standaloneBadge}>
+                  <div className="list-item-header">
+                    <h3 className="list-item-title">{problem.title}</h3>
+                    <span className={`status-badge ${problem.contest_id ? 'status-contest' : 'status-standalone'}`}>
                       {problem.contest_id ? 'Contest Problem' : 'Standalone'}
                     </span>
                   </div>
-                  <p>{problem.description}</p>
-                  <div style={styles.listItemMeta}>
-                    <span>Created: {new Date(problem.created_at).toLocaleDateString()}</span>
+                  <p className="list-item-description">{problem.description}</p>
+                  <div className="list-item-meta">
+                    <span className="meta-item">
+                      <span className="meta-icon">📅</span>
+                      <span>Created: {new Date(problem.created_at).toLocaleDateString()}</span>
+                    </span>
                   </div>
-                  <div style={styles.listItemActions}>
+                  <div className="list-item-actions">
                     <button
                       onClick={() => startEditProblem(problem)}
-                      style={styles.editButton}
+                      className="btn btn-secondary"
                     >
-                      Edit
+                      <span>Edit</span>
+                      <span>✏️</span>
                     </button>
                     <button
                       onClick={() => deleteProblem(problem.id)}
-                      style={styles.deleteButton}
+                      className="btn btn-danger"
                     >
-                      Delete
+                      <span>Delete</span>
+                      <span>🗑️</span>
                     </button>
                   </div>
                 </>
@@ -683,48 +777,57 @@ const Admin: React.FC = () => {
     </div>
   );
 
-
-
   return (
-    <div style={styles.container}>
-      <div style={styles.content}>
-        <h1 style={styles.title}>Admin Console</h1>
+    <div className="admin-page">
+      <div className="page-container">
+        <div className="page-header">
+          <h1 className="page-title">Admin Console</h1>
+          <p className="page-subtitle">
+            Manage contests, problems, and platform settings
+          </p>
+        </div>
         
-        <div style={styles.tabs}>
+        <div className="admin-tabs">
           <button
             onClick={() => setActiveTab('create-contest')}
-            style={activeTab === 'create-contest' ? styles.activeTab : styles.tab}
+            className={`admin-tab ${activeTab === 'create-contest' ? 'active' : ''}`}
           >
-            Create Contest
+            <span>Create Contest</span>
+            <span>🏆</span>
           </button>
           <button
             onClick={() => setActiveTab('create-problem')}
-            style={activeTab === 'create-problem' ? styles.activeTab : styles.tab}
+            className={`admin-tab ${activeTab === 'create-problem' ? 'active' : ''}`}
           >
-            Create Problem
+            <span>Create Problem</span>
+            <span>💻</span>
           </button>
           <button
             onClick={() => setActiveTab('manage-contests')}
-            style={activeTab === 'manage-contests' ? styles.activeTab : styles.tab}
+            className={`admin-tab ${activeTab === 'manage-contests' ? 'active' : ''}`}
           >
-            Manage Contests
+            <span>Manage Contests</span>
+            <span>📋</span>
           </button>
           <button
             onClick={() => setActiveTab('manage-problems')}
-            style={activeTab === 'manage-problems' ? styles.activeTab : styles.tab}
+            className={`admin-tab ${activeTab === 'manage-problems' ? 'active' : ''}`}
           >
-            Manage Problems
+            <span>Manage Problems</span>
+            <span>📝</span>
           </button>
-
         </div>
 
         {message && (
-          <div style={message.includes('successfully') ? styles.success : styles.error}>
-            {message}
+          <div className={`message ${message.includes('successfully') ? 'success' : 'error'}`}>
+            <span className="message-icon">
+              {message.includes('successfully') ? '✅' : '⚠️'}
+            </span>
+            <span className="message-text">{message}</span>
           </div>
         )}
 
-        <div style={styles.tabContent}>
+        <div className="tab-content">
           {activeTab === 'create-contest' && renderCreateContest()}
           {activeTab === 'create-problem' && renderCreateProblem()}
           {activeTab === 'manage-contests' && renderManageContests()}
@@ -733,311 +836,6 @@ const Admin: React.FC = () => {
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#0a0a0a',
-    color: '#fff'
-  },
-  content: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '2rem'
-  },
-  title: {
-    fontSize: '2.5rem',
-    color: '#00ff88',
-    marginBottom: '2rem'
-  },
-  tabs: {
-    display: 'flex',
-    gap: '0.5rem',
-    marginBottom: '2rem',
-    borderBottom: '1px solid #333'
-  },
-  tab: {
-    padding: '1rem 2rem',
-    backgroundColor: 'transparent',
-    color: '#ccc',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    borderBottom: '2px solid transparent'
-  },
-  activeTab: {
-    padding: '1rem 2rem',
-    backgroundColor: 'transparent',
-    color: '#00ff88',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    borderBottom: '2px solid #00ff88'
-  },
-  tabContent: {
-    backgroundColor: '#1a1a1a',
-    padding: '2rem',
-    borderRadius: '8px',
-    border: '1px solid #333'
-  },
-  sectionTitle: {
-    color: '#00ff88',
-    marginBottom: '1.5rem',
-    fontSize: '1.5rem'
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '1.5rem'
-  },
-  formGroup: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '0.5rem'
-  },
-  label: {
-    fontSize: '1.1rem',
-    color: '#00ff88'
-  },
-  smallLabel: {
-    fontSize: '0.9rem',
-    color: '#ccc'
-  },
-  input: {
-    padding: '0.75rem',
-    backgroundColor: '#2a2a2a',
-    border: '1px solid #333',
-    borderRadius: '4px',
-    color: '#fff',
-    fontSize: '1rem'
-  },
-  textarea: {
-    padding: '0.75rem',
-    backgroundColor: '#2a2a2a',
-    border: '1px solid #333',
-    borderRadius: '4px',
-    color: '#fff',
-    fontSize: '1rem',
-    resize: 'vertical' as const
-  },
-  smallTextarea: {
-    padding: '0.5rem',
-    backgroundColor: '#2a2a2a',
-    border: '1px solid #333',
-    borderRadius: '4px',
-    color: '#fff',
-    fontSize: '0.9rem',
-    resize: 'vertical' as const
-  },
-  testCasesSection: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '1rem'
-  },
-  testCasesHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  addButton: {
-    padding: '0.5rem 1rem',
-    backgroundColor: '#00ff88',
-    color: '#000',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '0.9rem'
-  },
-  testCase: {
-    backgroundColor: '#2a2a2a',
-    padding: '1rem',
-    borderRadius: '8px',
-    border: '1px solid #333'
-  },
-  testCaseHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '1rem'
-  },
-  removeButton: {
-    padding: '0.25rem 0.5rem',
-    backgroundColor: '#ff4444',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '0.8rem'
-  },
-  testCaseInputs: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '1rem'
-  },
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '0.25rem'
-  },
-  submitButton: {
-    padding: '1rem',
-    backgroundColor: '#00ff88',
-    color: '#000',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '1.1rem',
-    fontWeight: 'bold'
-  },
-  success: {
-    color: '#00ff88',
-    textAlign: 'center' as const,
-    padding: '0.5rem',
-    backgroundColor: 'rgba(0, 255, 136, 0.1)',
-    borderRadius: '4px',
-    marginBottom: '1rem'
-  },
-  error: {
-    color: '#ff4444',
-    textAlign: 'center' as const,
-    padding: '0.5rem',
-    backgroundColor: 'rgba(255, 68, 68, 0.1)',
-    borderRadius: '4px',
-    marginBottom: '1rem'
-  },
-  emptyMessage: {
-    color: '#ccc',
-    textAlign: 'center' as const,
-    fontSize: '1.1rem'
-  },
-  listContainer: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '1rem'
-  },
-  listItem: {
-    backgroundColor: '#2a2a2a',
-    padding: '1.5rem',
-    borderRadius: '8px',
-    border: '1px solid #333'
-  },
-  listItemHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '0.5rem'
-  },
-  listItemMeta: {
-    display: 'flex',
-    gap: '1rem',
-    color: '#888',
-    fontSize: '0.9rem',
-    marginTop: '0.5rem'
-  },
-  listItemActions: {
-    display: 'flex',
-    gap: '0.5rem',
-    marginTop: '1rem'
-  },
-  activeBadge: {
-    backgroundColor: '#00ff88',
-    color: '#000',
-    padding: '0.25rem 0.5rem',
-    borderRadius: '4px',
-    fontSize: '0.8rem',
-    fontWeight: 'bold'
-  },
-  inactiveBadge: {
-    backgroundColor: '#ff4444',
-    color: '#fff',
-    padding: '0.25rem 0.5rem',
-    borderRadius: '4px',
-    fontSize: '0.8rem',
-    fontWeight: 'bold'
-  },
-  contestBadge: {
-    backgroundColor: '#0088ff',
-    color: '#fff',
-    padding: '0.25rem 0.5rem',
-    borderRadius: '4px',
-    fontSize: '0.8rem',
-    fontWeight: 'bold'
-  },
-  standaloneBadge: {
-    backgroundColor: '#888',
-    color: '#fff',
-    padding: '0.25rem 0.5rem',
-    borderRadius: '4px',
-    fontSize: '0.8rem',
-    fontWeight: 'bold'
-  },
-  activateButton: {
-    backgroundColor: '#00ff88',
-    color: '#000',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '0.9rem'
-  },
-  deactivateButton: {
-    backgroundColor: '#ff4444',
-    color: '#fff',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '0.9rem'
-  },
-  editButton: {
-    backgroundColor: '#0088ff',
-    color: '#fff',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '0.9rem'
-  },
-  deleteButton: {
-    backgroundColor: '#ff4444',
-    color: '#fff',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '0.9rem'
-  },
-  editForm: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '1rem'
-  },
-  editActions: {
-    display: 'flex',
-    gap: '0.5rem',
-    marginTop: '1rem'
-  },
-  saveButton: {
-    backgroundColor: '#00ff88',
-    color: '#000',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    fontWeight: 'bold'
-  },
-  cancelButton: {
-    backgroundColor: '#888',
-    color: '#fff',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '0.9rem'
-  },
-
 };
 
 export default Admin; 
