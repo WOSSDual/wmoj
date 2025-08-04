@@ -12,6 +12,6 @@ Developed by:
 
 [Adham Abouaita](https://github.com/AdhamAbouaita): Full-Stack Engineer   
 
-[Mithru Naidu](https://github.com/supervoltpack): Quality Engineer and Tester   
+[Mithru Naidu](https://github.com/supervoltpack): Quality Engineer   
 
 [Adam Aly](https://github.com/Adbotdoescode): Penetration Tester
