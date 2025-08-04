@@ -129,6 +129,20 @@ const Login: React.FC = () => {
             }
           } else {
             console.log('Profile created successfully:', profileData);
+            
+            // Create admin user record (default to non-admin)
+            const { error: adminError } = await supabase
+              .from('admin_users')
+              .insert({
+                user_id: data.user.id,
+                is_admin: false
+              });
+
+            if (adminError) {
+              console.error('Error creating admin user record:', adminError);
+              // Don't fail the signup for this, just log it
+            }
+            
             setError('Check your email for the confirmation link!');
           }
         } catch (profileError) {

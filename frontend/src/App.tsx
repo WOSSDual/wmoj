@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './services/supabase';
+import { checkAdminStatus } from './services/adminAuth';
 import { User } from '@supabase/supabase-js';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -11,6 +12,75 @@ import ContestDetail from './pages/ContestDetail';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import './App.css';
+
+// Protected Admin Route Component
+const ProtectedAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const adminStatus = await checkAdminStatus();
+      setIsAdmin(adminStatus);
+      setLoading(false);
+    };
+    checkAdmin();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-content">
+          <div className="loading-logo">
+            <span className="loading-logo-text">WMOJ</span>
+            <div className="loading-logo-glow"></div>
+          </div>
+          <div className="loading-spinner">
+            <div className="spinner-ring"></div>
+            <div className="spinner-ring"></div>
+            <div className="spinner-ring"></div>
+          </div>
+          <p className="loading-text">Checking permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-content">
+          <div className="loading-logo">
+            <span className="loading-logo-text">WMOJ</span>
+            <div className="loading-logo-glow"></div>
+          </div>
+          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <h2 style={{ color: '#ff4444', marginBottom: '1rem' }}>Access Denied</h2>
+            <p style={{ color: '#ccc', marginBottom: '2rem' }}>
+              You don't have permission to access the admin panel.
+            </p>
+            <button 
+              onClick={() => window.history.back()} 
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: 'linear-gradient(135deg, #00ff88, #00cc6a)',
+                color: '#000',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -82,7 +152,15 @@ function App() {
           />
           <Route 
             path="/admin" 
-            element={<Admin />} 
+            element={
+              user ? (
+                <ProtectedAdminRoute>
+                  <Admin />
+                </ProtectedAdminRoute>
+              ) : (
+                <Navigate to="/login" />
+              )
+            } 
           />
           <Route 
             path="/profile" 
