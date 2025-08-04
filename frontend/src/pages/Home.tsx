@@ -20,11 +20,10 @@ const Home: React.FC = () => {
       <section className="hero-section">
         <div className="hero-content">
           <h1 className="hero-title animate-fade-in">
-            Welcome to <span className="gradient-text">WMOJ</span>
+            Welcome back to <span className="gradient-text">WMOJ</span>
           </h1>
           <p className="hero-subtitle animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            Your ultimate competitive programming platform for solving challenging problems, 
-            competing with peers, and mastering algorithms.
+            Are you ready for more CP?
           </p>
           <div className="hero-actions animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <a href="/problems" className="btn btn-primary">
