@@ -146,7 +146,7 @@ const Login: React.FC = () => {
     <div style={styles.container}>
       <div style={styles.formContainer}>
         <h1 style={styles.title}>WMOJ</h1>
-        <h2 style={styles.subtitle}>Welcome to the Competitive Programming Platform</h2>
+        <h2 style={styles.subtitle}>Welcome to WMOJ, the offical WOSS CP Website!</h2>
         
         <div style={styles.toggleContainer}>
           <button
