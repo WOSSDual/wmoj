@@ -74,13 +74,10 @@ const Login: React.FC = () => {
         return;
       }
 
-      // Sign up the user with explicit redirect URL
+      // Sign up the user
       const { data, error } = await supabase.auth.signUp({
         email,
-        password,
-        options: {
-          emailRedirectTo: `${process.env.REACT_APP_SITE_URL || 'http://localhost:3000'}/auth/callback`
-        }
+        password
       });
 
       if (error) {
