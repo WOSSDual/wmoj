@@ -17,8 +17,12 @@ export const checkAdminStatus = async (): Promise<boolean> => {
       .eq('user_id', user.id)
       .single();
 
-    if (error || !data) return false;
-    return data.is_admin;
+    if (error) {
+      console.error('Error checking admin status:', error);
+      return false;
+    }
+    
+    return data?.is_admin || false;
   } catch (error) {
     console.error('Error checking admin status:', error);
     return false;
@@ -36,10 +40,45 @@ export const getAdminUser = async (): Promise<AdminUser | null> => {
       .eq('user_id', user.id)
       .single();
 
-    if (error || !data) return null;
+    if (error) {
+      console.error('Error getting admin user:', error);
+      return null;
+    }
+    
     return data;
   } catch (error) {
     console.error('Error getting admin user:', error);
     return null;
+  }
+};
+
+// Helper function to ensure user has an admin record
+export const ensureAdminRecord = async (): Promise<void> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Check if admin record already exists
+    const { data: existingRecord } = await supabase
+      .from('admin_users')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .single();
+
+    // If no record exists, create one
+    if (!existingRecord) {
+      const { error } = await supabase
+        .from('admin_users')
+        .insert({
+          user_id: user.id,
+          is_admin: false
+        });
+
+      if (error) {
+        console.error('Error creating admin record:', error);
+      }
+    }
+  } catch (error) {
+    console.error('Error ensuring admin record:', error);
   }
 }; 
