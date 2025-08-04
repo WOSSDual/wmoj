@@ -88,66 +88,29 @@ const Login: React.FC = () => {
         console.log('User created successfully:', data.user.id);
         
         try {
-          // Wait a moment for the auth user to be fully created
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Wait a moment for the auth user to be fully created and trigger to run
+          await new Promise(resolve => setTimeout(resolve, 3000));
           
-          // Create the user profile with the chosen username
-          const { data: profileData, error: profileError } = await supabase
-            .from('user_profiles')
-            .insert({
-              user_id: data.user.id,
-              username: username.trim()
-            })
-            .select();
-
-          if (profileError) {
-            console.error('Error creating user profile:', profileError);
-            
-            // Check if profile already exists
-            const { data: existingProfile } = await supabase
+          // Update the username if it's different from the default
+          const defaultUsername = `user_${data.user.id.substring(0, 8)}`;
+          if (username.trim() !== defaultUsername) {
+            const { error: updateError } = await supabase
               .from('user_profiles')
-              .select('*')
-              .eq('user_id', data.user.id)
-              .single();
+              .update({ username: username.trim() })
+              .eq('user_id', data.user.id);
 
-            if (existingProfile) {
-              // Update existing profile
-              const { error: updateError } = await supabase
-                .from('user_profiles')
-                .update({ username: username.trim() })
-                .eq('user_id', data.user.id);
-
-              if (updateError) {
-                console.error('Error updating user profile:', updateError);
-                setError('Account created but there was an issue saving your username. Please contact support.');
-              } else {
-                console.log('Profile updated successfully');
-                setError('Check your email for the confirmation link!');
-              }
-            } else {
-              setError('Account created but there was an issue saving your username. Please contact support.');
-            }
-          } else {
-            console.log('Profile created successfully:', profileData);
-            
-            // Create admin user record (default to non-admin)
-            const { error: adminError } = await supabase
-              .from('admin_users')
-              .insert({
-                user_id: data.user.id,
-                is_admin: false
-              });
-
-            if (adminError) {
-              console.error('Error creating admin user record:', adminError);
+            if (updateError) {
+              console.error('Error updating username:', updateError);
               // Don't fail the signup for this, just log it
+            } else {
+              console.log('Username updated successfully');
             }
-            
-            setError('Check your email for the confirmation link!');
           }
-        } catch (profileError) {
-          console.error('Error creating user profile:', profileError);
-          setError('Account created but there was an issue saving your username. Please contact support.');
+          
+          setError('Check your email for the confirmation link!');
+        } catch (error) {
+          console.error('Error updating username:', error);
+          setError('Account created successfully! Check your email for the confirmation link.');
         }
       }
     } catch (err) {
