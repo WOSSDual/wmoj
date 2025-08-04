@@ -2,13 +2,22 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from 'multer';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, User } from '@supabase/supabase-js';
 import { spawn } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
 
 dotenv.config();
+
+// Extend Express Request interface to include user property
+declare global {
+  namespace Express {
+    interface Request {
+      user?: User;
+    }
+  }
+}
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -69,7 +78,7 @@ const authenticateUser = async (req: express.Request, res: express.Response, nex
       return res.status(401).json({ error: 'Invalid user token' });
     }
 
-    req.user = user;
+    req.user = user.user;
     next();
   } catch (error) {
     console.error('Authentication error:', error);
