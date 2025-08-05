@@ -77,6 +77,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ contestId }) => {
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>Leaderboard</h2>
+      <p style={styles.description}>
+        Ranked by total score across all problems.
+      </p>
       
       {leaderboard.length === 0 ? (
         <div style={styles.emptyState}>
@@ -90,7 +93,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ contestId }) => {
                 <th style={styles.headerCell}>Rank</th>
                 <th style={styles.headerCell}>User</th>
                 <th style={styles.headerCell}>Score</th>
-                <th style={styles.headerCell}>Problems Solved</th>
               </tr>
             </thead>
             <tbody>
@@ -109,11 +111,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ contestId }) => {
                   <td style={styles.cell}>
                     <span style={styles.score}>
                       {entry.total_score}/{entry.total_possible_score}
-                    </span>
-                  </td>
-                  <td style={styles.cell}>
-                    <span style={styles.problemsSolved}>
-                      {entry.problems_solved}/{entry.total_problems}
                     </span>
                   </td>
                 </tr>
@@ -208,9 +205,11 @@ const styles = {
     fontWeight: 'bold',
     fontSize: '1rem'
   },
-  problemsSolved: {
-    color: '#0088ff',
-    fontSize: '1rem'
+  description: {
+    color: '#888',
+    fontSize: '0.9rem',
+    marginTop: '0.5rem',
+    marginBottom: '1.5rem'
   }
 };
 

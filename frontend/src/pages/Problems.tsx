@@ -146,26 +146,6 @@ const Problems: React.FC = () => {
                   </div>
                 </div>
                 
-                <p className="problem-description">
-                  {(() => {
-                    // Strip markdown formatting for preview
-                    const plainText = problem.description
-                      .replace(/#{1,6}\s+/g, '') // Remove headers
-                      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-                      .replace(/\*(.*?)\*/g, '$1') // Remove italic
-                      .replace(/`(.*?)`/g, '$1') // Remove inline code
-                      .replace(/\$\$(.*?)\$\$/g, '') // Remove block math
-                      .replace(/\$(.*?)\$/g, '') // Remove inline math
-                      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
-                      .replace(/\n+/g, ' ') // Replace newlines with spaces
-                      .trim();
-                    
-                    return plainText.length > 150
-                      ? `${plainText.substring(0, 150)}...`
-                      : plainText;
-                  })()}
-                </p>
-                
                 <div className="problem-footer">
                   <div className="problem-meta">
                     <span className="meta-icon">📅</span>

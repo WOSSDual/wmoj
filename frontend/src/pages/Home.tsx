@@ -20,7 +20,9 @@ const Home: React.FC = () => {
       <section className="hero-section">
         <div className="hero-content">
           <h1 className="hero-title animate-fade-in">
-            Welcome back to <span className="gradient-text">WMOJ</span>
+            <span className="wobbling-pill">
+              Welcome to <span className="gradient-text">WMOJ</span>
+            </span>
           </h1>
           <p className="hero-subtitle animate-fade-in" style={{ animationDelay: '0.2s' }}>
             Are you ready for more <span className="gradient-text">CP?</span>

@@ -35,7 +35,11 @@ const Navigation: React.FC = () => {
       <div className="nav-container">
         <div className="nav-brand">
           <Link to="/" className="nav-logo">
-            <span className="logo-text">WMOJ</span>
+            <img 
+              src="/sitelogo.png" 
+              alt="WMOJ Logo" 
+              className="logo-image"
+            />
             <div className="logo-glow"></div>
           </Link>
         </div>

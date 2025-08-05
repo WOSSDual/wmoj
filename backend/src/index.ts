@@ -292,7 +292,11 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
       const profile = userProfiles?.find(p => p.user_id === participant.user_id);
       const userSubmissions = submissions?.filter(s => s.user_id === participant.user_id) || [];
       const totalScore = userSubmissions.reduce((sum, sub) => sum + sub.score, 0);
-      const problemsSolved = new Set(userSubmissions.map(sub => sub.problem_id)).size;
+      
+      // Only count problems as solved if user passed all test cases
+      const problemsSolved = userSubmissions.filter(sub => 
+        sub.score === sub.total_tests && sub.total_tests > 0
+      ).length;
 
       return {
         user_id: participant.user_id,

@@ -42,6 +42,79 @@
   line-height: 1.1;
 }
 
+/* Wobbling Pill Styles */
+.wobbling-pill {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: var(--text-inverse);
+  padding: var(--space-3) var(--space-8);
+  border-radius: var(--radius-full);
+  box-shadow: 
+    0 0 20px rgba(0, 255, 136, 0.3),
+    0 4px 15px rgba(0, 0, 0, 0.2);
+  position: relative;
+  animation: wobble 3s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.wobbling-pill::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary), var(--accent-tertiary));
+  border-radius: var(--radius-full);
+  z-index: -1;
+  opacity: 0.7;
+  animation: wobble-glow 3s ease-in-out infinite;
+}
+
+.wobbling-pill .gradient-text {
+  background: linear-gradient(135deg, var(--text-inverse), #ffffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: var(--font-weight-bold);
+}
+
+/* Wobble Animation */
+@keyframes wobble {
+  0%, 100% {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  15% {
+    transform: translateX(-8px) translateY(-4px) rotate(-2deg);
+  }
+  30% {
+    transform: translateX(6px) translateY(-6px) rotate(1deg);
+  }
+  45% {
+    transform: translateX(-4px) translateY(4px) rotate(-1deg);
+  }
+  60% {
+    transform: translateX(8px) translateY(-2px) rotate(2deg);
+  }
+  75% {
+    transform: translateX(-6px) translateY(6px) rotate(-1deg);
+  }
+  90% {
+    transform: translateX(4px) translateY(-4px) rotate(1deg);
+  }
+}
+
+@keyframes wobble-glow {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
 .hero-subtitle {
   font-size: var(--font-size-xl);
   color: var(--text-secondary);
@@ -361,6 +434,42 @@
     align-items: center;
   }
 
+  .wobbling-pill {
+    padding: var(--space-2) var(--space-6);
+    font-size: clamp(2rem, 6vw, 3rem);
+  }
+
+  .wobbling-pill::before {
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+  }
+
+  @keyframes wobble {
+    0%, 100% {
+      transform: translateX(0) translateY(0) rotate(0deg);
+    }
+    15% {
+      transform: translateX(-4px) translateY(-2px) rotate(-1deg);
+    }
+    30% {
+      transform: translateX(3px) translateY(-3px) rotate(0.5deg);
+    }
+    45% {
+      transform: translateX(-2px) translateY(2px) rotate(-0.5deg);
+    }
+    60% {
+      transform: translateX(4px) translateY(-1px) rotate(1deg);
+    }
+    75% {
+      transform: translateX(-3px) translateY(3px) rotate(-0.5deg);
+    }
+    90% {
+      transform: translateX(2px) translateY(-2px) rotate(0.5deg);
+    }
+  }
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-4);
@@ -384,6 +493,11 @@
 @media (max-width: 480px) {
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .wobbling-pill {
+    padding: var(--space-2) var(--space-4);
+    font-size: clamp(1.5rem, 5vw, 2rem);
   }
 
   .hero-title {

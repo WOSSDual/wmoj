@@ -318,17 +318,10 @@
   font-weight: var(--font-weight-semibold);
 }
 
-.problem-description {
-  color: var(--text-secondary);
-  margin-bottom: var(--space-6);
-  line-height: 1.6;
-  font-size: var(--font-size-base);
-}
-
 .problem-actions {
   display: flex;
   justify-content: center;
-  margin-top: auto;
+  margin-top: var(--space-4);
 }
 
 .problem-glow {
