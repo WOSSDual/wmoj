@@ -23,7 +23,7 @@ const Home: React.FC = () => {
             Welcome back to <span className="gradient-text">WMOJ</span>
           </h1>
           <p className="hero-subtitle animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            Are you ready for more CP?
+            Are you ready for more <span className="gradient-text">CP?</span>
           </p>
           <div className="hero-actions animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <a href="/problems" className="btn btn-primary">
