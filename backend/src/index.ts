@@ -247,6 +247,16 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
       return res.status(500).json({ success: false, error: 'Failed to fetch user profiles' });
     }
 
+    // Get all problems for this contest
+    const { data: problems, error: problemsError } = await supabase
+      .from('problems')
+      .select('*')
+      .eq('contest_id', contestId);
+
+    if (problemsError) {
+      return res.status(500).json({ success: false, error: 'Failed to fetch problems' });
+    }
+
     // Get all submissions for the contest
     const { data: submissions, error: submissionsError } = await supabase
       .from('contest_submissions')
@@ -257,6 +267,22 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
       return res.status(500).json({ success: false, error: 'Failed to fetch submissions' });
     }
 
+    // Get test cases for all problems to calculate total possible score
+    const { data: testCases, error: testCasesError } = await supabase
+      .from('test_cases')
+      .select('*')
+      .in('problem_id', problems.map(p => p.id));
+
+    if (testCasesError) {
+      return res.status(500).json({ success: false, error: 'Failed to fetch test cases' });
+    }
+
+    // Calculate total possible score for the contest
+    const totalPossibleScore = problems.reduce((total, problem) => {
+      const problemTestCases = testCases.filter(tc => tc.problem_id === problem.id);
+      return total + problemTestCases.length;
+    }, 0);
+
     // Calculate leaderboard
     const leaderboardData = participants?.map(participant => {
       const profile = userProfiles?.find(p => p.user_id === participant.user_id);
@@ -266,14 +292,21 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
 
       return {
         user_id: participant.user_id,
-        username: profile?.username || `User ${participant.user_id.substring(0, 8)}`,
+        user_email: profile?.username || `User ${participant.user_id.substring(0, 8)}`,
         total_score: totalScore,
-        problems_solved: problemsSolved
+        total_possible_score: totalPossibleScore,
+        problems_solved: problemsSolved,
+        total_problems: problems.length
       };
     }) || [];
 
-    // Sort by score (descending)
-    leaderboardData.sort((a, b) => b.total_score - a.total_score);
+    // Sort by total score (descending), then by problems solved (descending)
+    leaderboardData.sort((a, b) => {
+      if (b.total_score !== a.total_score) {
+        return b.total_score - a.total_score;
+      }
+      return b.problems_solved - a.problems_solved;
+    });
 
     res.json({ success: true, data: leaderboardData });
   } catch (error) {

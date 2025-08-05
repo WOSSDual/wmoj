@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../services/supabase';
+import { secureApi } from '../services/secureApi';
 
 interface ContestSubmission {
   id: string;
@@ -34,110 +35,14 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ contestId }) => {
       setLoading(true);
       setError('');
 
-      // Fetch all participants for this contest
-      const { data: participants, error: participantsError } = await supabase
-        .from('contest_participants')
-        .select('*')
-        .eq('contest_id', contestId);
-
-      if (participantsError) {
-        throw participantsError;
+      // Use the backend API to fetch leaderboard data
+      const response = await secureApi.getLeaderboard(contestId);
+      
+      if (response.success && response.data) {
+        setLeaderboard(response.data);
+      } else {
+        throw new Error(response.error || 'Failed to fetch leaderboard');
       }
-
-      // Fetch user profiles to get usernames
-      const participantUserIds = participants?.map(p => p.user_id) || [];
-      const { data: userProfiles, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('user_id, username')
-        .in('user_id', participantUserIds);
-
-      if (profilesError) {
-        console.warn('Could not fetch user profiles:', profilesError);
-      }
-
-      // Create a map of user IDs to usernames
-      const userDisplayNames = new Map<string, string>();
-      participants?.forEach(participant => {
-        const profile = userProfiles?.find(p => p.user_id === participant.user_id);
-        userDisplayNames.set(participant.user_id, profile?.username || `User ${participant.user_id.substring(0, 8)}`);
-      });
-
-      // Fetch all problems for this contest
-      const { data: problems, error: problemsError } = await supabase
-        .from('problems')
-        .select('*')
-        .eq('contest_id', contestId);
-
-      if (problemsError) {
-        throw problemsError;
-      }
-
-      // Fetch all submissions for this contest
-      const { data: submissions, error: submissionsError } = await supabase
-        .from('contest_submissions')
-        .select('*')
-        .eq('contest_id', contestId);
-
-      if (submissionsError) {
-        throw submissionsError;
-      }
-
-      // Fetch test cases for all problems to calculate total possible score
-      const { data: testCases, error: testCasesError } = await supabase
-        .from('test_cases')
-        .select('*')
-        .in('problem_id', problems.map(p => p.id));
-
-      if (testCasesError) {
-        throw testCasesError;
-      }
-
-      // Calculate total possible score for the contest
-      const totalPossibleScore = problems.reduce((total, problem) => {
-        const problemTestCases = testCases.filter(tc => tc.problem_id === problem.id);
-        return total + problemTestCases.length;
-      }, 0);
-
-      // Group submissions by user
-      const userSubmissions = new Map<string, ContestSubmission[]>();
-      submissions?.forEach(submission => {
-        if (!userSubmissions.has(submission.user_id)) {
-          userSubmissions.set(submission.user_id, []);
-        }
-        userSubmissions.get(submission.user_id)!.push(submission);
-      });
-
-      // Calculate scores for each participant
-      const leaderboardData: LeaderboardEntry[] = [];
-
-      for (const participant of participants || []) {
-        const userSubs = userSubmissions.get(participant.user_id) || [];
-        
-        // Calculate total score for this user
-        const totalScore = userSubs.reduce((sum, sub) => sum + sub.score, 0);
-        
-        // Count unique problems solved
-        const problemsSolved = new Set(userSubs.map(sub => sub.problem_id)).size;
-
-        leaderboardData.push({
-          user_id: participant.user_id,
-          user_email: userDisplayNames.get(participant.user_id) || 'Unknown User',
-          total_score: totalScore,
-          total_possible_score: totalPossibleScore,
-          problems_solved: problemsSolved,
-          total_problems: problems.length
-        });
-      }
-
-      // Sort by total score (descending), then by problems solved (descending)
-      leaderboardData.sort((a, b) => {
-        if (b.total_score !== a.total_score) {
-          return b.total_score - a.total_score;
-        }
-        return b.problems_solved - a.problems_solved;
-      });
-
-      setLeaderboard(leaderboardData);
 
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
