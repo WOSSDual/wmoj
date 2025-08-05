@@ -99,7 +99,7 @@ const requireAdmin = async (req: express.Request, res: express.Response, next: e
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    const { data: adminUser, error } = await supabase
+    const { data: adminUser, error } = await supabaseAdmin
       .from('admin_users')
       .select('is_admin')
       .eq('user_id', userId)
@@ -127,7 +127,7 @@ app.get('/api/submissions', authenticateUser, async (req, res) => {
     const userId = req.user?.id;
     const { contestId } = req.query;
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('contest_submissions')
       .select('*')
       .eq('user_id', userId);
@@ -155,7 +155,7 @@ app.get('/api/contests/:contestId', authenticateUser, async (req, res) => {
     const userId = req.user?.id;
 
     // Check if user is participating in the contest
-    const { data: participation, error: participationError } = await supabase
+    const { data: participation, error: participationError } = await supabaseAdmin
       .from('contest_participants')
       .select('*')
       .eq('contest_id', contestId)
@@ -167,7 +167,7 @@ app.get('/api/contests/:contestId', authenticateUser, async (req, res) => {
     }
 
     // Get contest data
-    const { data: contest, error: contestError } = await supabase
+    const { data: contest, error: contestError } = await supabaseAdmin
       .from('contests')
       .select('*')
       .eq('id', contestId)
@@ -178,7 +178,7 @@ app.get('/api/contests/:contestId', authenticateUser, async (req, res) => {
     }
 
     // Get problems (without test cases)
-    const { data: problems, error: problemsError } = await supabase
+    const { data: problems, error: problemsError } = await supabaseAdmin
       .from('problems')
       .select('*')
       .eq('contest_id', contestId)
@@ -189,7 +189,7 @@ app.get('/api/contests/:contestId', authenticateUser, async (req, res) => {
     }
 
     // Get user's submissions only
-    const { data: submissions, error: submissionsError } = await supabase
+    const { data: submissions, error: submissionsError } = await supabaseAdmin
       .from('contest_submissions')
       .select('*')
       .eq('contest_id', contestId)
@@ -328,7 +328,7 @@ app.post('/api/admin/contests', authenticateUser, requireAdmin, async (req, res)
       return res.status(400).json({ success: false, error: 'Missing required fields' });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('contests')
       .insert([{
         title: title.trim(),
@@ -358,7 +358,7 @@ app.post('/api/admin/problems', authenticateUser, requireAdmin, async (req, res)
     }
 
     // Insert problem
-    const { data: problem, error: problemError } = await supabase
+    const { data: problem, error: problemError } = await supabaseAdmin
       .from('problems')
       .insert([{
         title: title.trim(),
@@ -379,7 +379,7 @@ app.post('/api/admin/problems', authenticateUser, requireAdmin, async (req, res)
       expected_output: tc.expected_output.trim()
     }));
 
-    const { error: testCasesError } = await supabase
+    const { error: testCasesError } = await supabaseAdmin
       .from('test_cases')
       .insert(testCasesToInsert);
 
@@ -405,7 +405,7 @@ app.put('/api/profile', authenticateUser, async (req, res) => {
     }
 
     // Check if username is already taken by another user
-    const { data: existingUser, error: checkError } = await supabase
+    const { data: existingUser, error: checkError } = await supabaseAdmin
       .from('user_profiles')
       .select('username')
       .eq('username', username.trim())
@@ -417,7 +417,7 @@ app.put('/api/profile', authenticateUser, async (req, res) => {
     }
 
     // Update username
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('user_profiles')
       .update({ username: username.trim() })
       .eq('user_id', userId)
@@ -528,7 +528,7 @@ app.post('/judge', upload.single('code'), async (req, res) => {
     }
 
     // Get problem test cases from Supabase
-    const { data: problem, error: problemError } = await supabase
+    const { data: problem, error: problemError } = await supabaseAdmin
       .from('problems')
       .select('*')
       .eq('id', problemId)
@@ -540,7 +540,7 @@ app.post('/judge', upload.single('code'), async (req, res) => {
     }
 
     // Get test cases for this problem
-    const { data: testCases, error: testCasesError } = await supabase
+    const { data: testCases, error: testCasesError } = await supabaseAdmin
       .from('test_cases')
       .select('*')
       .eq('problem_id', problemId);
