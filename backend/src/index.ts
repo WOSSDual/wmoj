@@ -26,8 +26,10 @@ const port = process.env.PORT || 5001;
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://wmoj.ca'
-  ],
+    'https://wmoj.ca',
+    'https://wmoj.onrender.com',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
   credentials: true
 }));
 app.use(express.json());
@@ -122,6 +124,69 @@ app.get('/', (req, res) => {
 });
 
 // Secure API Routes
+
+// Get active contests (public)
+app.get('/api/contests', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('contests')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Failed to fetch contests' });
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error fetching contests:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Get standalone problems (public)
+app.get('/api/problems', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('problems')
+      .select('*')
+      .is('contest_id', null)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Failed to fetch problems' });
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error fetching problems:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Get a single problem
+app.get('/api/problems/:problemId', async (req, res) => {
+  try {
+    const { problemId } = req.params;
+    
+    const { data, error } = await supabaseAdmin
+      .from('problems')
+      .select('*')
+      .eq('id', problemId)
+      .single();
+
+    if (error) {
+      return res.status(404).json({ success: false, error: 'Problem not found' });
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error fetching problem:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 app.get('/api/submissions', authenticateUser, async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -386,11 +451,52 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
 });
 
 // Admin routes
+
+// Get all contests (admin only)
+app.get('/api/admin/contests', authenticateUser, requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('contests')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Failed to fetch contests' });
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error fetching contests:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Get all problems (admin only)
+app.get('/api/admin/problems', authenticateUser, requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('problems')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Failed to fetch problems' });
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error fetching problems:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 app.post('/api/users/finalize-signup', async (req, res) => {
   try {
+    console.log('Finalize signup request received:', { body: req.body });
     const { user_id, username } = req.body;
 
     if (!user_id || !username || !username.trim()) {
+      console.log('Missing required fields:', { user_id, username });
       return res.status(400).json({ success: false, error: 'User ID and username are required' });
     }
 
@@ -657,128 +763,26 @@ app.delete('/api/admin/problems/:problemId', authenticateUser, requireAdmin, asy
   }
 });
 
-// Create user profile route (for signup)
-app.post('/api/profile', async (req, res) => {
+// Note: Profile and admin user creation are now handled by /api/users/finalize-signup
+
+// Get user profile
+app.get('/api/profile', authenticateUser, async (req, res) => {
   try {
-    const { user_id, username } = req.body;
+    const userId = req.user?.id;
 
-    if (!user_id || !username || username.trim().length === 0) {
-      return res.status(400).json({ success: false, error: 'User ID and username are required' });
-    }
-
-    // Validate username format
-    if (username.length < 3 || username.length > 20) {
-      return res.status(400).json({ success: false, error: 'Username must be between 3 and 20 characters' });
-    }
-
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      return res.status(400).json({ success: false, error: 'Username can only contain letters, numbers, and underscores' });
-    }
-
-    // Check if username is already taken
-    const { data: existingUser, error: checkError } = await supabaseAdmin
-      .from('user_profiles')
-      .select('username')
-      .eq('username', username.trim())
-      .single();
-
-    if (checkError === null && existingUser) {
-      return res.status(400).json({ success: false, error: 'Username is already taken' });
-    }
-
-    // Check if user profile already exists
-    const { data: existingProfile, error: profileCheckError } = await supabaseAdmin
-      .from('user_profiles')
-      .select('*')
-      .eq('user_id', user_id)
-      .single();
-
-    if (profileCheckError === null && existingProfile) {
-      // Update existing profile
-      const { data, error } = await supabaseAdmin
-        .from('user_profiles')
-        .update({ username: username.trim() })
-        .eq('user_id', user_id)
-        .select()
-        .single();
-
-      if (error) {
-        return res.status(500).json({ success: false, error: 'Failed to update profile' });
-      }
-
-      return res.json({ success: true, data });
-    }
-
-    // Create new user profile
     const { data, error } = await supabaseAdmin
       .from('user_profiles')
-      .insert({
-        user_id: user_id,
-        username: username.trim()
-      })
-      .select()
+      .select('*')
+      .eq('user_id', userId)
       .single();
 
     if (error) {
-      return res.status(500).json({ success: false, error: 'Failed to create profile' });
+      return res.status(404).json({ success: false, error: 'Profile not found' });
     }
 
     res.json({ success: true, data });
   } catch (error) {
-    console.error('Error creating profile:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-});
-
-// Create admin user record route (for signup)
-app.post('/api/admin-user', async (req, res) => {
-  try {
-    const { user_id, is_admin } = req.body;
-
-    if (!user_id) {
-      return res.status(400).json({ success: false, error: 'User ID is required' });
-    }
-
-    // Check if admin user record already exists
-    const { data: existingAdmin, error: checkError } = await supabaseAdmin
-      .from('admin_users')
-      .select('*')
-      .eq('user_id', user_id)
-      .single();
-
-    if (checkError === null && existingAdmin) {
-      // Update existing admin record
-      const { data, error } = await supabaseAdmin
-        .from('admin_users')
-        .update({ is_admin: is_admin || false })
-        .eq('user_id', user_id)
-        .select()
-        .single();
-
-      if (error) {
-        return res.status(500).json({ success: false, error: 'Failed to update admin user record' });
-      }
-
-      return res.json({ success: true, data });
-    }
-
-    // Create new admin user record
-    const { data, error } = await supabaseAdmin
-      .from('admin_users')
-      .insert({
-        user_id: user_id,
-        is_admin: is_admin || false
-      })
-      .select()
-      .single();
-
-    if (error) {
-      return res.status(500).json({ success: false, error: 'Failed to create admin user record' });
-    }
-
-    res.json({ success: true, data });
-  } catch (error) {
-    console.error('Error creating admin user record:', error);
+    console.error('Error fetching profile:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
-import { supabase } from '../services/supabase';
+import { secureApi } from '../services/secureApi';
 import './Problems.css';
 
 interface Problem {
@@ -23,16 +23,12 @@ const Problems: React.FC = () => {
 
   const fetchProblems = async () => {
     try {
-      const { data, error } = await supabase
-        .from('problems')
-        .select('*')
-        .is('contest_id', null) // Only standalone problems
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching problems:', error);
+      const result = await secureApi.getProblems();
+      
+      if (result.success) {
+        setProblems(result.data || []);
       } else {
-        setProblems(data || []);
+        console.error('Error fetching problems:', result.error);
       }
     } catch (error) {
       console.error('Error:', error);

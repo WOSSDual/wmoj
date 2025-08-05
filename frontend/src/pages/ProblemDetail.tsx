@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import Navigation from '../components/Navigation';
-import { supabase } from '../services/supabase';
 import { secureApi } from '../services/secureApi';
+import { supabase } from '../services/supabase'; // Only for auth
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import './ProblemDetail.css';
 
@@ -50,16 +50,12 @@ const ProblemDetail: React.FC = () => {
 
   const fetchProblem = async () => {
     try {
-      const { data, error } = await supabase
-        .from('problems')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        setError('Problem not found');
+      const result = await secureApi.getProblem(id!);
+      
+      if (result.success) {
+        setProblem(result.data);
       } else {
-        setProblem(data);
+        setError(result.error || 'Problem not found');
       }
     } catch (error) {
       setError('Failed to load problem');

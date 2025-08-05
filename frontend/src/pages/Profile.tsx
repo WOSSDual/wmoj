@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import Navigation from '../components/Navigation';
-import { supabase } from '../services/supabase';
 import { secureApi } from '../services/secureApi';
 import './Profile.css';
 
@@ -24,25 +23,14 @@ const Profile: React.FC = () => {
 
   const fetchProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setError('User not found');
-        return;
+      const result = await secureApi.getUserProfile();
+      
+      if (result.success && result.data) {
+        setProfile(result.data);
+        setNewUsername(result.data.username);
+      } else {
+        setError(result.error || 'Failed to load profile');
       }
-
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (profileError) {
-        setError('Failed to load profile');
-        return;
-      }
-
-      setProfile(profileData);
-      setNewUsername(profileData.username);
     } catch (error) {
       console.error('Error fetching profile:', error);
       setError('Failed to load profile');
@@ -77,20 +65,7 @@ const Profile: React.FC = () => {
     setMessage('');
 
     try {
-      // Check if username is already taken
-      const { data: existingUser } = await supabase
-        .from('user_profiles')
-        .select('username')
-        .eq('username', newUsername.trim())
-        .neq('user_id', profile.user_id)
-        .single();
-
-      if (existingUser) {
-        setError('Username is already taken');
-        return;
-      }
-
-      // Update the username using backend API
+      // Update the username using backend API (it will check for duplicates)
       const updateResult = await secureApi.updateUserProfile({
         username: newUsername.trim()
       });

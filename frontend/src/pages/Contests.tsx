@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
-import { supabase } from '../services/supabase';
+import { supabase } from '../services/supabase'; // Only for auth
 import { secureApi } from '../services/secureApi';
 import './Contests.css';
 
@@ -34,12 +34,13 @@ const Contests: React.FC = () => {
 
   const fetchContests = async () => {
     try {
-      // Fetch active contests
-      const { data: contestsData } = await supabase
-        .from('contests')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+      // Fetch active contests using backend API
+      const contestsResult = await secureApi.getContests();
+      if (contestsResult.success) {
+        setContests(contestsResult.data || []);
+      } else {
+        console.error('Error fetching contests:', contestsResult.error);
+      }
 
       // Fetch user's participations using secureApi
       const participationsResponse = await secureApi.getUserParticipations();
@@ -49,8 +50,6 @@ const Contests: React.FC = () => {
         console.error('Error fetching participations:', participationsResponse.error);
         setParticipations([]);
       }
-
-      setContests(contestsData || []);
     } catch (error) {
       console.error('Error fetching contests:', error);
     } finally {

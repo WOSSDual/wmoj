@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../services/supabase';
 import { secureApi } from '../services/secureApi';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import './Admin.css';
@@ -67,20 +66,21 @@ const Admin: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      // Fetch contests
-      const { data: contestsData } = await supabase
-        .from('contests')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Fetch contests using backend API
+      const contestsResult = await secureApi.adminGetContests();
+      if (contestsResult.success) {
+        setContests(contestsResult.data || []);
+      } else {
+        console.error('Error fetching contests:', contestsResult.error);
+      }
 
-      // Fetch problems
-      const { data: problemsData } = await supabase
-        .from('problems')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      setContests(contestsData || []);
-      setProblems(problemsData || []);
+      // Fetch problems using backend API
+      const problemsResult = await secureApi.adminGetProblems();
+      if (problemsResult.success) {
+        setProblems(problemsResult.data || []);
+      } else {
+        console.error('Error fetching problems:', problemsResult.error);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     }

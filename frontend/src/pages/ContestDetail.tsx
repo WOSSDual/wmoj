@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import Leaderboard from '../components/Leaderboard';
-import { supabase } from '../services/supabase';
+import { supabase } from '../services/supabase'; // Only for auth
+import { secureApi } from '../services/secureApi';
 import './ContestDetail.css';
 
 interface Contest {
@@ -50,51 +51,26 @@ const ContestDetail: React.FC = () => {
 
   const fetchContestData = async () => {
     try {
-      // Fetch contest details
-      const { data: contestData, error: contestError } = await supabase
-        .from('contests')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (contestError || !contestData) {
-        setError('Contest not found');
+      // Use the secure API to fetch contest data
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError('You must be logged in to view contest details');
+        setLoading(false);
         return;
       }
 
-      setContest(contestData);
-
-      // Fetch contest problems
-      const { data: problemsData } = await supabase
-        .from('problems')
-        .select('*')
-        .eq('contest_id', id)
-        .order('created_at', { ascending: true });
-
-      setProblems(problemsData || []);
-
-      // Fetch test cases for all problems in this contest
-      if (problemsData && problemsData.length > 0) {
-        const { data: testCasesData } = await supabase
-          .from('test_cases')
-          .select('*')
-          .in('problem_id', problemsData.map(p => p.id));
-
-        setTestCases(testCasesData || []);
+      // The backend endpoint already fetches everything we need
+      const result = await secureApi.getContestData(id!);
+      
+      if (result.success && result.data) {
+        setContest(result.data.contest);
+        setProblems(result.data.problems || []);
+        setSubmissions(result.data.submissions || []);
+        // Note: Test cases are not included in the response for security reasons
+        // They're only available to the judge endpoint
+      } else {
+        setError(result.error || 'Failed to load contest data');
       }
-
-      // Fetch user's submissions for this contest
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: submissionsData } = await supabase
-          .from('contest_submissions')
-          .select('*')
-          .eq('contest_id', id)
-          .eq('user_id', user.id);
-
-        setSubmissions(submissionsData || []);
-      }
-
     } catch (error) {
       console.error('Error fetching contest data:', error);
       setError('Failed to load contest data');

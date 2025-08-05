@@ -9,6 +9,54 @@ export interface SecureApiResponse<T = any> {
 }
 
 export const secureApi = {
+  // Public endpoints (no auth required)
+  async getProblems(): Promise<SecureApiResponse> {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/problems`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to fetch problems' };
+    }
+  },
+
+  async getProblem(problemId: string): Promise<SecureApiResponse> {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/problems/${problemId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to fetch problem' };
+    }
+  },
+
+  async getContests(): Promise<SecureApiResponse> {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/contests`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to fetch contests' };
+    }
+  },
   // Get user's own submissions only
   async getUserSubmissions(contestId?: string): Promise<SecureApiResponse> {
     try {
@@ -80,6 +128,50 @@ export const secureApi = {
   },
 
   // Admin-only operations
+  async adminGetContests(): Promise<SecureApiResponse> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/admin/contests`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to fetch contests' };
+    }
+  },
+
+  async adminGetProblems(): Promise<SecureApiResponse> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/admin/problems`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to fetch problems' };
+    }
+  },
+
   async adminCreateContest(contestData: any): Promise<SecureApiResponse> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -239,41 +331,7 @@ export const secureApi = {
     }
   },
 
-  // Create user profile (for signup)
-  async createUserProfile(profileData: any): Promise<SecureApiResponse> {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/profile`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(profileData)
-      });
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      return { success: false, error: 'Failed to create profile' };
-    }
-  },
-
-  // Create admin user record (for signup)
-  async createAdminUser(adminData: any): Promise<SecureApiResponse> {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/admin-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(adminData)
-      });
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      return { success: false, error: 'Failed to create admin user record' };
-    }
-  },
+  // Note: Profile and admin user creation are now handled by finalizeSignup
 
 
   async finalizeSignup(profileData: { user_id: string, username: string }): Promise<SecureApiResponse> {
@@ -293,6 +351,29 @@ export const secureApi = {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       return { success: false, error: `Network or parsing error: ${errorMessage}` };
+    }
+  },
+
+  // Get user profile
+  async getUserProfile(): Promise<SecureApiResponse> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/profile`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to fetch profile' };
     }
   },
 
