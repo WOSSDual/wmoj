@@ -6,10 +6,10 @@ const Home: React.FC = () => {
 
 
   const stats = [
-    { label: 'Problems Solved', value: '150+', icon: '✅' },
-    { label: 'Active Users', value: '500+', icon: '👥' },
-    { label: 'Contests Hosted', value: '25+', icon: '🎯' },
-    { label: 'Success Rate', value: '95%', icon: '📈' }
+    { label: 'Problems Solved', value: '700+', icon: '✅' },
+    { label: 'Monthly Active Users', value: '5000+', icon: '👥' },
+    { label: 'Contests Hosted', value: '40+', icon: '🎯' },
+    { label: 'User Rating', value: '94%', icon: '📈' }
   ];
 
   return (
