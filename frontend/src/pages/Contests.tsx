@@ -45,7 +45,7 @@ const Contests: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         try {
-          const response = await axios.get('http://localhost:5001/api/participations', {
+          const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/participations`, {
             headers: {
               'Authorization': `Bearer ${user.id}`
             }
@@ -84,7 +84,7 @@ const Contests: React.FC = () => {
         return;
       }
 
-      const response = await axios.post(`http://localhost:5001/api/contests/${contestId}/join`, {}, {
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/contests/${contestId}/join`, {}, {
         headers: {
           'Authorization': `Bearer ${user.id}`
         }
