@@ -89,16 +89,14 @@ const Login: React.FC = () => {
           } else {
             console.log('Profile created successfully:', profileResult.data);
             
-            // Create admin user record (default to non-admin)
-            const { error: adminError } = await supabase
-              .from('admin_users')
-              .insert({
-                user_id: data.user.id,
-                is_admin: false
-              });
+            // Create admin user record using backend API
+            const adminResult = await secureApi.createAdminUser({
+              user_id: data.user.id,
+              is_admin: false
+            });
 
-            if (adminError) {
-              console.error('Error creating admin user record:', adminError);
+            if (!adminResult.success) {
+              console.error('Error creating admin user record:', adminResult.error);
               // Don't fail the signup for this, just log it
             }
             

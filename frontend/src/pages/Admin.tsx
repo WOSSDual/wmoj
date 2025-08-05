@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
+import { secureApi } from '../services/secureApi';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import './Admin.css';
 
@@ -113,18 +114,14 @@ const Admin: React.FC = () => {
     setMessage('');
 
     try {
-      const { error } = await supabase
-        .from('contests')
-        .insert([
-          {
-            title: contestTitle.trim(),
-            description: contestDescription.trim(),
-            end_time: contestEndTime || null
-          }
-        ]);
+      const result = await secureApi.adminCreateContest({
+        title: contestTitle.trim(),
+        description: contestDescription.trim(),
+        end_time: contestEndTime || null
+      });
 
-      if (error) {
-        throw error;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create contest');
       }
 
       setMessage('Contest created successfully!');
@@ -158,36 +155,18 @@ const Admin: React.FC = () => {
     setMessage('');
 
     try {
-      // Insert the problem
-      const { data: problem, error: problemError } = await supabase
-        .from('problems')
-        .insert([
-          {
-            title: problemTitle.trim(),
-            description: problemDescription.trim(),
-            contest_id: selectedContestId || null
-          }
-        ])
-        .select()
-        .single();
+      const result = await secureApi.adminCreateProblem({
+        title: problemTitle.trim(),
+        description: problemDescription.trim(),
+        contest_id: selectedContestId || null,
+        test_cases: testCases.map(tc => ({
+          input: tc.input.trim(),
+          expected_output: tc.expected_output.trim()
+        }))
+      });
 
-      if (problemError) {
-        throw problemError;
-      }
-
-      // Insert test cases
-      const testCasesToInsert = testCases.map(tc => ({
-        problem_id: problem.id,
-        input: tc.input.trim(),
-        expected_output: tc.expected_output.trim()
-      }));
-
-      const { error: testCasesError } = await supabase
-        .from('test_cases')
-        .insert(testCasesToInsert);
-
-      if (testCasesError) {
-        throw testCasesError;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create problem');
       }
 
       setMessage('Problem created successfully!');
@@ -207,12 +186,12 @@ const Admin: React.FC = () => {
 
   const toggleContestStatus = async (contestId: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
-        .from('contests')
-        .update({ is_active: !currentStatus })
-        .eq('id', contestId);
-
-      if (error) throw error;
+      const result = await secureApi.adminUpdateContestStatus(contestId, !currentStatus);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update contest status');
+      }
+      
       fetchData();
     } catch (error) {
       console.error('Error updating contest status:', error);
@@ -225,12 +204,12 @@ const Admin: React.FC = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('contests')
-        .delete()
-        .eq('id', contestId);
-
-      if (error) throw error;
+      const result = await secureApi.adminDeleteContest(contestId);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to delete contest');
+      }
+      
       setMessage('Contest deleted successfully!');
       fetchData();
     } catch (error) {
@@ -245,12 +224,12 @@ const Admin: React.FC = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('problems')
-        .delete()
-        .eq('id', problemId);
-
-      if (error) throw error;
+      const result = await secureApi.adminDeleteProblem(problemId);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to delete problem');
+      }
+      
       setMessage('Problem deleted successfully!');
       fetchData();
     } catch (error) {
@@ -291,16 +270,15 @@ const Admin: React.FC = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('contests')
-        .update({
-          title: editContestTitle.trim(),
-          description: editContestDescription.trim(),
-          end_time: editContestEndTime || null
-        })
-        .eq('id', editingContest.id);
+      const result = await secureApi.adminUpdateContest(editingContest.id, {
+        title: editContestTitle.trim(),
+        description: editContestDescription.trim(),
+        end_time: editContestEndTime || null
+      });
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update contest');
+      }
       
       setMessage('Contest updated successfully!');
       cancelEdit();
@@ -318,16 +296,15 @@ const Admin: React.FC = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('problems')
-        .update({
-          title: editProblemTitle.trim(),
-          description: editProblemDescription.trim(),
-          contest_id: editProblemContestId || null
-        })
-        .eq('id', editingProblem.id);
+      const result = await secureApi.adminUpdateProblem(editingProblem.id, {
+        title: editProblemTitle.trim(),
+        description: editProblemDescription.trim(),
+        contest_id: editProblemContestId || null
+      });
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update problem');
+      }
       
       setMessage('Problem updated successfully!');
       cancelEdit();

@@ -103,6 +103,119 @@ export const secureApi = {
     }
   },
 
+  async adminUpdateContestStatus(contestId: string, isActive: boolean): Promise<SecureApiResponse> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/admin/contests/${contestId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ is_active: isActive })
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to update contest status' };
+    }
+  },
+
+  async adminUpdateContest(contestId: string, contestData: any): Promise<SecureApiResponse> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/admin/contests/${contestId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contestData)
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to update contest' };
+    }
+  },
+
+  async adminDeleteContest(contestId: string): Promise<SecureApiResponse> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/admin/contests/${contestId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to delete contest' };
+    }
+  },
+
+  async adminUpdateProblem(problemId: string, problemData: any): Promise<SecureApiResponse> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/admin/problems/${problemId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(problemData)
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to update problem' };
+    }
+  },
+
+  async adminDeleteProblem(problemId: string): Promise<SecureApiResponse> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/admin/problems/${problemId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to delete problem' };
+    }
+  },
+
   async adminCreateProblem(problemData: any): Promise<SecureApiResponse> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -141,6 +254,24 @@ export const secureApi = {
       return result;
     } catch (error) {
       return { success: false, error: 'Failed to create profile' };
+    }
+  },
+
+  // Create admin user record (for signup)
+  async createAdminUser(adminData: any): Promise<SecureApiResponse> {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(adminData)
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to create admin user record' };
     }
   },
 
@@ -211,6 +342,30 @@ export const secureApi = {
       return result;
     } catch (error) {
       return { success: false, error: 'Failed to join contest' };
+    }
+  },
+
+  // Save contest submission
+  async saveContestSubmission(submissionData: any): Promise<SecureApiResponse> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/submissions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submissionData)
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to save submission' };
     }
   }
 }; 

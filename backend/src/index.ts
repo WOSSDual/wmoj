@@ -149,6 +149,68 @@ app.get('/api/submissions', authenticateUser, async (req, res) => {
   }
 });
 
+app.post('/api/submissions', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { contest_id, problem_id, score, total_tests } = req.body;
+
+    if (!contest_id || !problem_id || score === undefined || total_tests === undefined) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+
+    // Check if submission already exists
+    const { data: existingSubmission, error: checkError } = await supabaseAdmin
+      .from('contest_submissions')
+      .select('*')
+      .eq('contest_id', contest_id)
+      .eq('problem_id', problem_id)
+      .eq('user_id', userId)
+      .single();
+
+    if (checkError === null && existingSubmission) {
+      // Update existing submission
+      const { data, error } = await supabaseAdmin
+        .from('contest_submissions')
+        .update({
+          score: score,
+          total_tests: total_tests,
+          submitted_at: new Date().toISOString()
+        })
+        .eq('id', existingSubmission.id)
+        .select()
+        .single();
+
+      if (error) {
+        return res.status(500).json({ success: false, error: 'Failed to update submission' });
+      }
+
+      return res.json({ success: true, data });
+    }
+
+    // Create new submission
+    const { data, error } = await supabaseAdmin
+      .from('contest_submissions')
+      .insert({
+        contest_id: contest_id,
+        problem_id: problem_id,
+        user_id: userId,
+        score: score,
+        total_tests: total_tests
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Failed to create submission' });
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error saving submission:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 app.get('/api/contests/:contestId', authenticateUser, async (req, res) => {
   try {
     const { contestId } = req.params;
@@ -398,6 +460,136 @@ app.post('/api/admin/problems', authenticateUser, requireAdmin, async (req, res)
   }
 });
 
+// Update contest status
+app.put('/api/admin/contests/:contestId/status', authenticateUser, requireAdmin, async (req, res) => {
+  try {
+    const { contestId } = req.params;
+    const { is_active } = req.body;
+
+    const { data, error } = await supabaseAdmin
+      .from('contests')
+      .update({ is_active })
+      .eq('id', contestId)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Failed to update contest status' });
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error updating contest status:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Update contest
+app.put('/api/admin/contests/:contestId', authenticateUser, requireAdmin, async (req, res) => {
+  try {
+    const { contestId } = req.params;
+    const { title, description, end_time } = req.body;
+
+    if (!title || !description) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('contests')
+      .update({
+        title: title.trim(),
+        description: description.trim(),
+        end_time: end_time || null
+      })
+      .eq('id', contestId)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Failed to update contest' });
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error updating contest:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Update problem
+app.put('/api/admin/problems/:problemId', authenticateUser, requireAdmin, async (req, res) => {
+  try {
+    const { problemId } = req.params;
+    const { title, description, contest_id } = req.body;
+
+    if (!title || !description) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('problems')
+      .update({
+        title: title.trim(),
+        description: description.trim(),
+        contest_id: contest_id || null
+      })
+      .eq('id', problemId)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Failed to update problem' });
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error updating problem:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Delete contest
+app.delete('/api/admin/contests/:contestId', authenticateUser, requireAdmin, async (req, res) => {
+  try {
+    const { contestId } = req.params;
+
+    const { error } = await supabaseAdmin
+      .from('contests')
+      .delete()
+      .eq('id', contestId);
+
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Failed to delete contest' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting contest:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Delete problem
+app.delete('/api/admin/problems/:problemId', authenticateUser, requireAdmin, async (req, res) => {
+  try {
+    const { problemId } = req.params;
+
+    const { error } = await supabaseAdmin
+      .from('problems')
+      .delete()
+      .eq('id', problemId);
+
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Failed to delete problem' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting problem:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // Create user profile route (for signup)
 app.post('/api/profile', async (req, res) => {
   try {
@@ -467,6 +659,59 @@ app.post('/api/profile', async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error creating profile:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Create admin user record route (for signup)
+app.post('/api/admin-user', async (req, res) => {
+  try {
+    const { user_id, is_admin } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({ success: false, error: 'User ID is required' });
+    }
+
+    // Check if admin user record already exists
+    const { data: existingAdmin, error: checkError } = await supabaseAdmin
+      .from('admin_users')
+      .select('*')
+      .eq('user_id', user_id)
+      .single();
+
+    if (checkError === null && existingAdmin) {
+      // Update existing admin record
+      const { data, error } = await supabaseAdmin
+        .from('admin_users')
+        .update({ is_admin: is_admin || false })
+        .eq('user_id', user_id)
+        .select()
+        .single();
+
+      if (error) {
+        return res.status(500).json({ success: false, error: 'Failed to update admin user record' });
+      }
+
+      return res.json({ success: true, data });
+    }
+
+    // Create new admin user record
+    const { data, error } = await supabaseAdmin
+      .from('admin_users')
+      .insert({
+        user_id: user_id,
+        is_admin: is_admin || false
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Failed to create admin user record' });
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error creating admin user record:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });

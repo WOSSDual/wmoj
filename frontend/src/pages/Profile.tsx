@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navigation from '../components/Navigation';
 import { supabase } from '../services/supabase';
+import { secureApi } from '../services/secureApi';
 import './Profile.css';
 
 interface UserProfile {
@@ -89,14 +90,13 @@ const Profile: React.FC = () => {
         return;
       }
 
-      // Update the username
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({ username: newUsername.trim() })
-        .eq('user_id', profile.user_id);
+      // Update the username using backend API
+      const updateResult = await secureApi.updateUserProfile({
+        username: newUsername.trim()
+      });
 
-      if (updateError) {
-        setError('Failed to update username');
+      if (!updateResult.success) {
+        setError(updateResult.error || 'Failed to update username');
         return;
       }
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import { supabase } from '../services/supabase';
+import { secureApi } from '../services/secureApi';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import './ProblemDetail.css';
 
@@ -85,38 +86,16 @@ const ProblemDetail: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Check if user already has a submission for this problem in this contest
-      const { data: existingSubmission } = await supabase
-        .from('contest_submissions')
-        .select('*')
-        .eq('contest_id', contestId)
-        .eq('problem_id', problem.id)
-        .eq('user_id', user.id)
-        .single();
+      // Save submission using backend API
+      const submissionResult = await secureApi.saveContestSubmission({
+        contest_id: contestId,
+        problem_id: problem.id,
+        score: result.passedTests,
+        total_tests: result.totalTests
+      });
 
-      if (existingSubmission) {
-        // Update existing submission
-        await supabase
-          .from('contest_submissions')
-          .update({
-            score: result.passedTests,
-            total_tests: result.totalTests,
-            submitted_at: new Date().toISOString()
-          })
-          .eq('id', existingSubmission.id);
-      } else {
-        // Create new submission
-        await supabase
-          .from('contest_submissions')
-          .insert([
-            {
-              contest_id: contestId,
-              problem_id: problem.id,
-              user_id: user.id,
-              score: result.passedTests,
-              total_tests: result.totalTests
-            }
-          ]);
+      if (!submissionResult.success) {
+        console.error('Error saving contest submission:', submissionResult.error);
       }
     } catch (error) {
       console.error('Error saving contest submission:', error);
