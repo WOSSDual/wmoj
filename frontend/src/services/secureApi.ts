@@ -148,5 +148,51 @@ export const secureApi = {
     } catch (error) {
       return { success: false, error: 'Failed to update profile' };
     }
+  },
+
+  // Get user's contest participations
+  async getUserParticipations(): Promise<SecureApiResponse> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/participations`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to fetch participations' };
+    }
+  },
+
+  // Join a contest
+  async joinContest(contestId: string): Promise<SecureApiResponse> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/contests/${contestId}/join`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to join contest' };
+    }
   }
 }; 

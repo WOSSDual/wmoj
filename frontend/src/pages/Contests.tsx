@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import { supabase } from '../services/supabase';
-import axios from 'axios';
 import './Contests.css';
 
 interface Contest {
@@ -41,22 +40,19 @@ const Contests: React.FC = () => {
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      // Fetch user's participations using backend API
+      // Fetch user's participations using direct Supabase query
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        try {
-          const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/participations`, {
-            headers: {
-              'Authorization': `Bearer ${user.id}`
-            }
-          });
-          
-          if (response.data.success) {
-            setParticipations(response.data.data || []);
-          }
-        } catch (error) {
+        const { data: participationsData, error } = await supabase
+          .from('contest_participants')
+          .select('*')
+          .eq('user_id', user.id);
+        
+        if (error) {
           console.error('Error fetching participations:', error);
           setParticipations([]);
+        } else {
+          setParticipations(participationsData || []);
         }
       }
 
@@ -84,30 +80,37 @@ const Contests: React.FC = () => {
         return;
       }
 
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/contests/${contestId}/join`, {}, {
-        headers: {
-          'Authorization': `Bearer ${user.id}`
-        }
-      });
+      const { error } = await supabase
+        .from('contest_participants')
+        .insert([
+          {
+            contest_id: contestId,
+            user_id: user.id
+          }
+        ]);
 
-      if (response.data.success) {
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          alert('You are already participating in this contest');
+          // Refresh participations to sync state
+          fetchContests();
+        } else {
+          throw error;
+        }
+      } else {
         alert('Successfully joined the contest!');
         // Immediately update local state to reflect the new participation
         const newParticipation: ContestParticipant = {
-          id: response.data.data.id,
+          id: Date.now().toString(), // Temporary ID
           contest_id: contestId,
           user_id: user.id,
-          joined_at: response.data.data.joined_at || new Date().toISOString()
+          joined_at: new Date().toISOString()
         };
         setParticipations(prev => [...prev, newParticipation]);
       }
     } catch (error: any) {
       console.error('Error joining contest:', error);
-      if (error.response?.data?.error) {
-        alert(error.response.data.error);
-      } else {
-        alert('Failed to join contest. Please try again.');
-      }
+      alert('Failed to join contest. Please try again.');
     } finally {
       setJoining(null);
     }
