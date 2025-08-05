@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import { supabase } from '../services/supabase';
+import { secureApi } from '../services/secureApi';
 import './Contests.css';
 
 interface Contest {
@@ -40,20 +41,13 @@ const Contests: React.FC = () => {
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      // Fetch user's participations using direct Supabase query
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: participationsData, error } = await supabase
-          .from('contest_participants')
-          .select('*')
-          .eq('user_id', user.id);
-        
-        if (error) {
-          console.error('Error fetching participations:', error);
-          setParticipations([]);
-        } else {
-          setParticipations(participationsData || []);
-        }
+      // Fetch user's participations using secureApi
+      const participationsResponse = await secureApi.getUserParticipations();
+      if (participationsResponse.success) {
+        setParticipations(participationsResponse.data || []);
+      } else {
+        console.error('Error fetching participations:', participationsResponse.error);
+        setParticipations([]);
       }
 
       setContests(contestsData || []);
@@ -65,7 +59,6 @@ const Contests: React.FC = () => {
   };
 
   const joinContest = async (contestId: string) => {
-    // Prevent joining if already participating
     if (isParticipating(contestId)) {
       alert('You are already participating in this contest');
       return;
@@ -74,41 +67,24 @@ const Contests: React.FC = () => {
     setJoining(contestId);
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        alert('You must be logged in to join contests');
-        return;
-      }
+      const response = await secureApi.joinContest(contestId);
 
-      const { error } = await supabase
-        .from('contest_participants')
-        .insert([
-          {
+      if (response.success && response.data) {
+        alert('Successfully joined the contest!');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const newParticipation: ContestParticipant = {
+            id: response.data.id,
             contest_id: contestId,
-            user_id: user.id
-          }
-        ]);
-
-      if (error) {
-        if (error.code === '23505') { // Unique constraint violation
-          alert('You are already participating in this contest');
-          // Refresh participations to sync state
-          fetchContests();
-        } else {
-          throw error;
+            user_id: user.id,
+            joined_at: response.data.joined_at || new Date().toISOString()
+          };
+          setParticipations(prev => [...prev, newParticipation]);
         }
       } else {
-        alert('Successfully joined the contest!');
-        // Immediately update local state to reflect the new participation
-        const newParticipation: ContestParticipant = {
-          id: Date.now().toString(), // Temporary ID
-          contest_id: contestId,
-          user_id: user.id,
-          joined_at: new Date().toISOString()
-        };
-        setParticipations(prev => [...prev, newParticipation]);
+        alert(response.error || 'Failed to join contest');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error joining contest:', error);
       alert('Failed to join contest. Please try again.');
     } finally {
