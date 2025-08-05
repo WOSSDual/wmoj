@@ -61,54 +61,32 @@ const Login: React.FC = () => {
     }
 
     try {
-      // Sign up the user
       const { data, error } = await supabase.auth.signUp({
         email,
-        password
+        password,
       });
 
       if (error) {
-        console.error('Signup error:', error);
         setError(error.message);
-      } else if (data.user) {
-        console.log('User created successfully:', data.user.id);
-        
-        try {
-          // Wait a moment for the auth user to be fully created
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Create the user profile using the backend API
-          const profileResult = await secureApi.createUserProfile({
-            user_id: data.user.id,
-            username: username.trim()
-          });
+        return;
+      }
+      
+      if (data.user) {
+        const result = await secureApi.finalizeSignup({ 
+          user_id: data.user.id, 
+          username: username.trim() 
+        });
 
-          if (!profileResult.success) {
-            console.error('Error creating user profile:', profileResult.error);
-            setError(`Account created but there was an issue saving your username: ${profileResult.error}. Please contact support.`);
-          } else {
-            console.log('Profile created successfully:', profileResult.data);
-            
-            // Create admin user record using backend API
-            const adminResult = await secureApi.createAdminUser({
-              user_id: data.user.id,
-              is_admin: false
-            });
-
-            if (!adminResult.success) {
-              console.error('Error creating admin user record:', adminResult.error);
-              // Don't fail the signup for this, just log it
-            }
-            
-            setError('Check your email for the confirmation link!');
-          }
-        } catch (profileError) {
-          console.error('Error creating user profile:', profileError);
-          setError('Account created but there was an issue saving your username. Please contact support.');
+        if (result.success) {
+          setError('Success! Please check your email for a confirmation link.');
+        } else {
+          setError(result.error || 'An error occurred during profile creation.');
         }
+      } else {
+        setError('An unknown error occurred during signup.');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }

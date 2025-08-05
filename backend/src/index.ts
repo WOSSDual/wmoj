@@ -386,6 +386,73 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
 });
 
 // Admin routes
+app.post('/api/users/finalize-signup', async (req, res) => {
+  try {
+    const { user_id, username } = req.body;
+
+    if (!user_id || !username || !username.trim()) {
+      return res.status(400).json({ success: false, error: 'User ID and username are required' });
+    }
+
+    const trimmedUsername = username.trim();
+
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 20) {
+      return res.status(400).json({ success: false, error: 'Username must be between 3 and 20 characters' });
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
+      return res.status(400).json({ success: false, error: 'Username can only contain letters, numbers, and underscores' });
+    }
+
+    // Check if username is already taken
+    const { data: existingUser, error: checkUserError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('username')
+      .eq('username', trimmedUsername)
+      .maybeSingle();
+
+    if (checkUserError) {
+      console.error('Error checking for existing username:', checkUserError);
+      return res.status(500).json({ success: false, error: 'Database error when checking username.' });
+    }
+
+    if (existingUser) {
+      return res.status(400).json({ success: false, error: 'Username is already taken' });
+    }
+
+    // Create new user profile
+    const { data: newProfile, error: insertProfileError } = await supabaseAdmin
+      .from('user_profiles')
+      .insert({ user_id: user_id, username: trimmedUsername })
+      .select()
+      .single();
+
+    if (insertProfileError) {
+      console.error('Error creating profile in DB:', insertProfileError);
+      if (insertProfileError.code === '23503') { // foreign_key_violation
+        return res.status(400).json({ success: false, error: 'Invalid user ID. User does not exist.' });
+      }
+      return res.status(500).json({ success: false, error: 'Failed to create user profile.' });
+    }
+
+    // Create admin user record
+    const { error: insertAdminError } = await supabaseAdmin
+      .from('admin_users')
+      .insert({ user_id: user_id, is_admin: false });
+
+    if (insertAdminError) {
+      // This is not ideal, but we shouldn't fail the whole signup if this fails.
+      // We'll log the error and the user can be handled manually if needed.
+      console.error('Critical: Failed to create admin user record for new user:', insertAdminError);
+    }
+
+    res.status(201).json({ success: true, data: newProfile });
+
+  } catch (error) {
+    console.error('Unexpected error in /api/users/finalize-signup:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 app.post('/api/admin/contests', authenticateUser, requireAdmin, async (req, res) => {
   try {
     const { title, description, end_time } = req.body;

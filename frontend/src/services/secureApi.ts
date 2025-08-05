@@ -275,6 +275,27 @@ export const secureApi = {
     }
   },
 
+
+  async finalizeSignup(profileData: { user_id: string, username: string }): Promise<SecureApiResponse> {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/users/finalize-signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData)
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        return { success: false, error: result.error || `Request failed with status ${response.status}` };
+      }
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      return { success: false, error: `Network or parsing error: ${errorMessage}` };
+    }
+  },
+
   // Update user profile (own profile only)
   async updateUserProfile(profileData: any): Promise<SecureApiResponse> {
     try {
