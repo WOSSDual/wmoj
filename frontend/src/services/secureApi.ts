@@ -126,6 +126,24 @@ export const secureApi = {
     }
   },
 
+  // Create user profile (for signup)
+  async createUserProfile(profileData: any): Promise<SecureApiResponse> {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData)
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to create profile' };
+    }
+  },
+
   // Update user profile (own profile only)
   async updateUserProfile(profileData: any): Promise<SecureApiResponse> {
     try {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import { secureApi } from '../services/secureApi';
 import './Login.css';
 
 const Login: React.FC = () => {
@@ -60,21 +61,6 @@ const Login: React.FC = () => {
     }
 
     try {
-      // First, check if username is already taken
-      const { data: existingUser, error: checkError } = await supabase
-        .from('user_profiles')
-        .select('username')
-        .eq('username', username.trim());
-
-      if (checkError) {
-        console.error('Error checking username:', checkError);
-        // Continue anyway, the unique constraint will catch duplicates
-      } else if (existingUser && existingUser.length > 0) {
-        setError('Username is already taken');
-        setIsLoading(false);
-        return;
-      }
-
       // Sign up the user
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -91,44 +77,17 @@ const Login: React.FC = () => {
           // Wait a moment for the auth user to be fully created
           await new Promise(resolve => setTimeout(resolve, 2000));
           
-          // Create the user profile with the chosen username
-          const { data: profileData, error: profileError } = await supabase
-            .from('user_profiles')
-            .insert({
-              user_id: data.user.id,
-              username: username.trim()
-            })
-            .select();
+          // Create the user profile using the backend API
+          const profileResult = await secureApi.createUserProfile({
+            user_id: data.user.id,
+            username: username.trim()
+          });
 
-          if (profileError) {
-            console.error('Error creating user profile:', profileError);
-            
-            // Check if profile already exists
-            const { data: existingProfile } = await supabase
-              .from('user_profiles')
-              .select('*')
-              .eq('user_id', data.user.id)
-              .single();
-
-            if (existingProfile) {
-              // Update existing profile
-              const { error: updateError } = await supabase
-                .from('user_profiles')
-                .update({ username: username.trim() })
-                .eq('user_id', data.user.id);
-
-              if (updateError) {
-                console.error('Error updating user profile:', updateError);
-                setError('Account created but there was an issue saving your username. Please contact support.');
-              } else {
-                console.log('Profile updated successfully');
-                setError('Check your email for the confirmation link!');
-              }
-            } else {
-              setError('Account created but there was an issue saving your username. Please contact support.');
-            }
+          if (!profileResult.success) {
+            console.error('Error creating user profile:', profileResult.error);
+            setError(`Account created but there was an issue saving your username: ${profileResult.error}. Please contact support.`);
           } else {
-            console.log('Profile created successfully:', profileData);
+            console.log('Profile created successfully:', profileResult.data);
             
             // Create admin user record (default to non-admin)
             const { error: adminError } = await supabase

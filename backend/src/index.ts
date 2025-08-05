@@ -398,6 +398,79 @@ app.post('/api/admin/problems', authenticateUser, requireAdmin, async (req, res)
   }
 });
 
+// Create user profile route (for signup)
+app.post('/api/profile', async (req, res) => {
+  try {
+    const { user_id, username } = req.body;
+
+    if (!user_id || !username || username.trim().length === 0) {
+      return res.status(400).json({ success: false, error: 'User ID and username are required' });
+    }
+
+    // Validate username format
+    if (username.length < 3 || username.length > 20) {
+      return res.status(400).json({ success: false, error: 'Username must be between 3 and 20 characters' });
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      return res.status(400).json({ success: false, error: 'Username can only contain letters, numbers, and underscores' });
+    }
+
+    // Check if username is already taken
+    const { data: existingUser, error: checkError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('username')
+      .eq('username', username.trim())
+      .single();
+
+    if (checkError === null && existingUser) {
+      return res.status(400).json({ success: false, error: 'Username is already taken' });
+    }
+
+    // Check if user profile already exists
+    const { data: existingProfile, error: profileCheckError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', user_id)
+      .single();
+
+    if (profileCheckError === null && existingProfile) {
+      // Update existing profile
+      const { data, error } = await supabaseAdmin
+        .from('user_profiles')
+        .update({ username: username.trim() })
+        .eq('user_id', user_id)
+        .select()
+        .single();
+
+      if (error) {
+        return res.status(500).json({ success: false, error: 'Failed to update profile' });
+      }
+
+      return res.json({ success: true, data });
+    }
+
+    // Create new user profile
+    const { data, error } = await supabaseAdmin
+      .from('user_profiles')
+      .insert({
+        user_id: user_id,
+        username: username.trim()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ success: false, error: 'Failed to create profile' });
+    }
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error creating profile:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // Profile update route
 app.put('/api/profile', authenticateUser, async (req, res) => {
   try {
