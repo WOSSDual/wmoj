@@ -28,8 +28,8 @@ app.use(cors({
     'http://localhost:3000',
     'https://wmoj.ca',
     'https://wmoj.onrender.com',
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
+  ],
   credentials: true
 }));
 app.use(express.json());
