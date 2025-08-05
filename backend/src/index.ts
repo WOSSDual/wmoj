@@ -37,6 +37,12 @@ const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Supabase admin client for backend operations (bypasses RLS)
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAdmin = supabaseServiceKey 
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : supabase; // Fallback to regular client if service key not available
+
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -215,7 +221,7 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
     const userId = req.user?.id;
 
     // Check if user is participating
-    const { data: participation, error: participationError } = await supabase
+    const { data: participation, error: participationError } = await supabaseAdmin
       .from('contest_participants')
       .select('*')
       .eq('contest_id', contestId)
@@ -227,7 +233,7 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
     }
 
     // Get all participants
-    const { data: participants, error: participantsError } = await supabase
+    const { data: participants, error: participantsError } = await supabaseAdmin
       .from('contest_participants')
       .select('*')
       .eq('contest_id', contestId);
@@ -238,7 +244,7 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
 
     // Get user profiles
     const participantUserIds = participants?.map(p => p.user_id) || [];
-    const { data: userProfiles, error: profilesError } = await supabase
+    const { data: userProfiles, error: profilesError } = await supabaseAdmin
       .from('user_profiles')
       .select('user_id, username')
       .in('user_id', participantUserIds);
@@ -248,7 +254,7 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
     }
 
     // Get all problems for this contest
-    const { data: problems, error: problemsError } = await supabase
+    const { data: problems, error: problemsError } = await supabaseAdmin
       .from('problems')
       .select('*')
       .eq('contest_id', contestId);
@@ -258,7 +264,7 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
     }
 
     // Get all submissions for the contest
-    const { data: submissions, error: submissionsError } = await supabase
+    const { data: submissions, error: submissionsError } = await supabaseAdmin
       .from('contest_submissions')
       .select('*')
       .eq('contest_id', contestId);
@@ -268,7 +274,7 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
     }
 
     // Get test cases for all problems to calculate total possible score
-    const { data: testCases, error: testCasesError } = await supabase
+    const { data: testCases, error: testCasesError } = await supabaseAdmin
       .from('test_cases')
       .select('*')
       .in('problem_id', problems.map(p => p.id));
@@ -436,7 +442,11 @@ app.get('/api/participations', authenticateUser, async (req, res) => {
   try {
     const userId = req.user?.id;
 
-    const { data: participations, error } = await supabase
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'User ID is required' });
+    }
+
+    const { data: participations, error } = await supabaseAdmin
       .from('contest_participants')
       .select('*')
       .eq('user_id', userId);
@@ -460,7 +470,7 @@ app.post('/api/contests/:contestId/join', authenticateUser, async (req, res) => 
     const userId = req.user?.id;
 
     // Check if contest exists and is active
-    const { data: contest, error: contestError } = await supabase
+    const { data: contest, error: contestError } = await supabaseAdmin
       .from('contests')
       .select('*')
       .eq('id', contestId)
@@ -472,7 +482,7 @@ app.post('/api/contests/:contestId/join', authenticateUser, async (req, res) => 
     }
 
     // Check if user is already participating
-    const { data: existingParticipation, error: checkError } = await supabase
+    const { data: existingParticipation, error: checkError } = await supabaseAdmin
       .from('contest_participants')
       .select('*')
       .eq('contest_id', contestId)
@@ -484,7 +494,7 @@ app.post('/api/contests/:contestId/join', authenticateUser, async (req, res) => 
     }
 
     // Join the contest
-    const { data: participation, error: joinError } = await supabase
+    const { data: participation, error: joinError } = await supabaseAdmin
       .from('contest_participants')
       .insert([{
         contest_id: contestId,
