@@ -61,6 +61,27 @@ const Login: React.FC = () => {
     }
 
     try {
+      // First, check if email or username already exists
+      const checkResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5001'}/api/users/check-availability`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          username: username.trim()
+        })
+      });
+
+      const checkResult = await checkResponse.json();
+      
+      if (!checkResult.success) {
+        setError(checkResult.error);
+        setIsLoading(false);
+        return;
+      }
+
+      // If checks pass, proceed with signup
       const { data, error } = await supabase.auth.signUp({
         email,
         password,

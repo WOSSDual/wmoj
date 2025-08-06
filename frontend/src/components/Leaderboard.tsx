@@ -14,7 +14,7 @@ interface ContestSubmission {
 
 interface LeaderboardEntry {
   user_id: string;
-  user_email: string;
+  username: string;
   total_score: number;
   total_possible_score: number;
   problems_solved: number;
@@ -104,8 +104,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ contestId }) => {
                     </span>
                   </td>
                   <td style={styles.cell}>
-                    <span style={styles.userEmail}>
-                      {entry.user_email}
+                    <span style={styles.username}>
+                      {entry.username}
                     </span>
                   </td>
                   <td style={styles.cell}>
@@ -196,7 +196,7 @@ const styles = {
     fontSize: '1.2rem',
     fontWeight: 'bold'
   },
-  userEmail: {
+  username: {
     color: '#fff',
     fontSize: '1rem'
   },

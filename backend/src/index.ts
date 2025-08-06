@@ -494,7 +494,7 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
 
       return {
         user_id: participant.user_id,
-        user_email: profile?.username || `User ${participant.user_id.substring(0, 8)}`,
+        username: profile?.username || 'Anonymous User',
         total_score: totalScore,
         total_possible_score: totalPossibleScore,
         problems_solved: problemsSolved,
@@ -594,6 +594,62 @@ app.get('/api/admin/problems', authenticateUser, requireAdmin, async (req, res) 
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching problems:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Handle preflight requests for check availability
+app.options('/api/users/check-availability', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+// Check if email or username is available for signup
+app.post('/api/users/check-availability', async (req, res) => {
+  try {
+    const { email, username } = req.body;
+
+    if (!email || !username) {
+      return res.status(400).json({ success: false, error: 'Email and username are required' });
+    }
+
+    // Check if email already exists in Supabase Auth
+    const { data: existingUser, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (authError) {
+      console.error('Error checking existing users:', authError);
+      return res.status(500).json({ success: false, error: 'Failed to check user availability' });
+    }
+
+    const emailExists = existingUser.users.some(user => user.email === email.trim().toLowerCase());
+    
+    if (emailExists) {
+      return res.status(400).json({ success: false, error: 'This email address is already registered. Please use a different email or try logging in.' });
+    }
+
+    // Check if username already exists in user_profiles
+    const { data: existingProfile, error: profileError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('username')
+      .eq('username', username.trim())
+      .maybeSingle();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error('Error checking existing username:', profileError);
+      return res.status(500).json({ success: false, error: 'Failed to check username availability' });
+    }
+
+    if (existingProfile) {
+      return res.status(400).json({ success: false, error: 'This username is already taken. Please choose a different username.' });
+    }
+
+    // Both email and username are available
+    res.json({ success: true, message: 'Email and username are available' });
+  } catch (error) {
+    console.error('Error in check-availability:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
