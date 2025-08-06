@@ -11,6 +11,7 @@ import Contests from './pages/Contests';
 import ContestDetail from './pages/ContestDetail';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
+import VerificationBanner from './components/VerificationBanner';
 import './App.css';
 
 // Protected Admin Route Component
@@ -153,6 +154,7 @@ function App() {
   return (
     <Router>
       <div className="App">
+        {user && <VerificationBanner />}
         <Routes>
           <Route 
             path="/login" 

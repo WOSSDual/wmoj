@@ -77,7 +77,18 @@ const Login: React.FC = () => {
       const result = await response.json();
       
       if (result.success) {
-        setError('Success! Please check your email for a confirmation link. You can log in immediately, but you\'ll need to verify your email to join contests and submit solutions.');
+        // Automatically log the user in after successful signup
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password
+        });
+
+        if (loginError) {
+          setError('Account created but login failed. Please try logging in manually.');
+        } else {
+          // Redirect to home page
+          navigate('/');
+        }
       } else {
         setError(result.error || 'Signup failed');
       }

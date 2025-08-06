@@ -709,11 +709,11 @@ app.post('/api/users/signup', async (req, res) => {
       return res.status(400).json({ success: false, error: 'This username is already taken. Please choose a different username.' });
     }
 
-    // Create user in Supabase Auth
+    // Create user in Supabase Auth (with email_confirm: true to allow immediate login)
     const { data: authData, error: signupError } = await supabaseAdmin.auth.admin.createUser({
       email: email.trim(),
       password,
-      email_confirm: false, // User needs to verify email
+      email_confirm: true, // Allow immediate login, but track verification separately
       user_metadata: {
         username: trimmedUsername
       }
@@ -769,7 +769,12 @@ app.post('/api/users/signup', async (req, res) => {
 
     res.json({ 
       success: true, 
-      message: 'Account created successfully! Please check your email for verification.' 
+      message: 'Account created successfully! You are now logged in.',
+      user: {
+        id: authData.user.id,
+        email: authData.user.email,
+        user_metadata: authData.user.user_metadata
+      }
     });
 
   } catch (error) {

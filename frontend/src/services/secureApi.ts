@@ -447,6 +447,52 @@ export const secureApi = {
     }
   },
 
+  // Get verification status
+  async getVerificationStatus(): Promise<SecureApiResponse> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/users/verification-status`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to check verification status' };
+    }
+  },
+
+  // Resend verification email
+  async resendVerificationEmail(): Promise<SecureApiResponse> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/users/resend-verification`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return { success: false, error: 'Failed to resend verification email' };
+    }
+  },
+
   // Save contest submission
   async saveContestSubmission(submissionData: any): Promise<SecureApiResponse> {
     try {
