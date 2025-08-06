@@ -90,6 +90,9 @@ function App() {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        handleUserProfileCheck(session.user);
+      }
       setLoading(false);
     });
 
@@ -98,10 +101,35 @@ function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        handleUserProfileCheck(session.user);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const handleUserProfileCheck = async (user: User) => {
+    try {
+      // Check if user profile exists
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      // If no profile exists and user has metadata with username, create profile
+      if (error && error.code === 'PGRST116' && user.user_metadata?.username) {
+        const { secureApi } = await import('./services/secureApi');
+        await secureApi.finalizeSignup({
+          user_id: user.id,
+          username: user.user_metadata.username
+        });
+      }
+    } catch (error) {
+      console.error('Error checking user profile:', error);
+    }
+  };
 
   if (loading) {
     return (

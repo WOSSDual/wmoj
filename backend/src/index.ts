@@ -500,6 +500,20 @@ app.post('/api/users/finalize-signup', async (req, res) => {
       return res.status(400).json({ success: false, error: 'User ID and username are required' });
     }
 
+    // Verify the user exists and is confirmed in Supabase Auth
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(user_id);
+    
+    if (authError || !authUser) {
+      console.log('User not found in auth:', authError);
+      return res.status(400).json({ success: false, error: 'Invalid user ID or user not found' });
+    }
+
+    // Check if user's email is confirmed
+    if (!authUser.user.email_confirmed_at) {
+      console.log('User email not confirmed:', user_id);
+      return res.status(400).json({ success: false, error: 'Email verification required before profile creation' });
+    }
+
     const trimmedUsername = username.trim();
 
     if (trimmedUsername.length < 3 || trimmedUsername.length > 20) {

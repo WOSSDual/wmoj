@@ -64,6 +64,11 @@ const Login: React.FC = () => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            username: username.trim() // Store username in user metadata for later use
+          }
+        }
       });
 
       if (error) {
@@ -72,16 +77,8 @@ const Login: React.FC = () => {
       }
       
       if (data.user) {
-        const result = await secureApi.finalizeSignup({ 
-          user_id: data.user.id, 
-          username: username.trim() 
-        });
-
-        if (result.success) {
-          setError('Success! Please check your email for a confirmation link.');
-        } else {
-          setError(result.error || 'An error occurred during profile creation.');
-        }
+        // Only show success message - profile will be created after email verification
+        setError('Success! Please check your email for a confirmation link. Your profile will be created once you verify your email.');
       } else {
         setError('An unknown error occurred during signup.');
       }
@@ -178,30 +175,30 @@ const Login: React.FC = () => {
             </div>
 
             {error && (
-              <div className={`error-message ${error.includes('Check your email') ? 'success' : ''}`}>
+              <div className={`error-message ${error.includes('Success!') ? 'success' : ''}`}>
                 <span className="error-icon">
-                  {error.includes('Check your email') ? '✅' : '⚠️'}
+                  {error.includes('Success!') ? '✅' : '⚠️'}
                 </span>
-                {error}
+                <span className="error-text">{error}</span>
               </div>
             )}
 
-            <button
-              type="submit"
+            <button 
+              type="submit" 
               className={`submit-btn ${isLoading ? 'loading' : ''}`}
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
                   <div className="spinner"></div>
-                  <span>Processing...</span>
+                  <span>{isSignUp ? 'Creating Account...' : 'Signing In...'}</span>
                 </>
               ) : (
                 <>
-                  <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
                   <span className="btn-icon">
-                    {isSignUp ? '🚀' : '→'}
+                    {isSignUp ? '✨' : '🚀'}
                   </span>
+                  <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
                 </>
               )}
             </button>
@@ -209,13 +206,10 @@ const Login: React.FC = () => {
 
           <div className="login-footer">
             <p className="footer-text">
-              {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-              <button
-                className="footer-link"
-                onClick={() => setIsSignUp(!isSignUp)}
-              >
-                {isSignUp ? ' Sign in here' : ' Sign up here'}
-              </button>
+              Ready to solve some problems?{' '}
+              <a href="#home" className="footer-link">
+                Start coding!
+              </a>
             </p>
           </div>
         </div>
@@ -224,4 +218,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login; 
+export default Login;
