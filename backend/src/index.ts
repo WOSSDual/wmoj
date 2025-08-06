@@ -598,6 +598,15 @@ app.get('/api/admin/problems', authenticateUser, requireAdmin, async (req, res) 
   }
 });
 
+// Handle preflight requests for signup
+app.options('/api/users/signup', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
 // Handle preflight requests for check availability
 app.options('/api/users/check-availability', (req, res) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin);
@@ -650,6 +659,259 @@ app.post('/api/users/check-availability', async (req, res) => {
     res.json({ success: true, message: 'Email and username are available' });
   } catch (error) {
     console.error('Error in check-availability:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Complete signup endpoint that handles both Supabase auth and our database
+app.post('/api/users/signup', async (req, res) => {
+  try {
+    const { email, password, username } = req.body;
+
+    if (!email || !password || !username) {
+      return res.status(400).json({ success: false, error: 'Email, password, and username are required' });
+    }
+
+    // Validate username format
+    const trimmedUsername = username.trim();
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 20) {
+      return res.status(400).json({ success: false, error: 'Username must be between 3 and 20 characters' });
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
+      return res.status(400).json({ success: false, error: 'Username can only contain letters, numbers, and underscores' });
+    }
+
+    // Check if email already exists
+    const { data: existingUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+    if (authError) {
+      console.error('Error checking existing users:', authError);
+      return res.status(500).json({ success: false, error: 'Failed to check user availability' });
+    }
+
+    const emailExists = existingUsers.users.some(user => user.email === email.trim().toLowerCase());
+    if (emailExists) {
+      return res.status(400).json({ success: false, error: 'This email address is already registered. Please use a different email or try logging in.' });
+    }
+
+    // Check if username already exists
+    const { data: existingProfile, error: profileError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('username')
+      .eq('username', trimmedUsername)
+      .maybeSingle();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error('Error checking existing username:', profileError);
+      return res.status(500).json({ success: false, error: 'Failed to check username availability' });
+    }
+
+    if (existingProfile) {
+      return res.status(400).json({ success: false, error: 'This username is already taken. Please choose a different username.' });
+    }
+
+    // Create user in Supabase Auth
+    const { data: authData, error: signupError } = await supabaseAdmin.auth.admin.createUser({
+      email: email.trim(),
+      password,
+      email_confirm: false, // User needs to verify email
+      user_metadata: {
+        username: trimmedUsername
+      }
+    });
+
+    if (signupError) {
+      console.error('Supabase auth signup error:', signupError);
+      return res.status(400).json({ success: false, error: signupError.message });
+    }
+
+    if (!authData.user) {
+      return res.status(500).json({ success: false, error: 'Failed to create user account' });
+    }
+
+    // Create user profile
+    const { error: profileInsertError } = await supabaseAdmin
+      .from('user_profiles')
+      .insert({ 
+        user_id: authData.user.id, 
+        username: trimmedUsername 
+      });
+
+    if (profileInsertError) {
+      console.error('Error creating user profile:', profileInsertError);
+      // Don't fail the signup if profile creation fails - we can retry later
+    }
+
+    // Create verified_users entry (initially false)
+    const { error: verifiedInsertError } = await supabaseAdmin
+      .from('verified_users')
+      .insert({ 
+        user_id: authData.user.id, 
+        email: email.trim().toLowerCase(),
+        is_verified: false 
+      });
+
+    if (verifiedInsertError) {
+      console.error('Error creating verified_users entry:', verifiedInsertError);
+      // Don't fail the signup if this fails
+    }
+
+    // Create admin user record
+    const { error: adminInsertError } = await supabaseAdmin
+      .from('admin_users')
+      .insert({ 
+        user_id: authData.user.id, 
+        is_admin: false 
+      });
+
+    if (adminInsertError) {
+      console.error('Error creating admin_users entry:', adminInsertError);
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Account created successfully! Please check your email for verification.' 
+    });
+
+  } catch (error) {
+    console.error('Error in signup:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Handle preflight requests for email verification
+app.options('/api/users/resend-verification', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+app.options('/api/users/verify-email', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+app.options('/api/users/verification-status', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+// Resend verification email
+app.post('/api/users/resend-verification', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    // Get user's auth data
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId!);
+    
+    if (authError || !authUser) {
+      return res.status(400).json({ success: false, error: 'User not found' });
+    }
+
+    // Check if already verified
+    const { data: verifiedUser, error: verifiedError } = await supabaseAdmin
+      .from('verified_users')
+      .select('is_verified')
+      .eq('user_id', userId)
+      .single();
+
+    if (!verifiedError && verifiedUser && verifiedUser.is_verified) {
+      return res.status(400).json({ success: false, error: 'Email is already verified' });
+    }
+
+    // Generate a new confirmation link using the recovery type
+    const { data: linkData, error: resendError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email: authUser.user.email!
+    });
+
+    if (resendError) {
+      console.error('Error resending verification email:', resendError);
+      return res.status(500).json({ success: false, error: 'Failed to resend verification email' });
+    }
+
+    res.json({ success: true, message: 'Verification email sent successfully' });
+  } catch (error) {
+    console.error('Error in resend verification:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Check verification status
+app.get('/api/users/verification-status', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    const { data: verifiedUser, error: verifiedError } = await supabaseAdmin
+      .from('verified_users')
+      .select('is_verified')
+      .eq('user_id', userId)
+      .single();
+
+    if (verifiedError) {
+      return res.status(500).json({ success: false, error: 'Failed to check verification status' });
+    }
+
+    res.json({ 
+      success: true, 
+      data: { 
+        is_verified: verifiedUser ? verifiedUser.is_verified : false 
+      } 
+    });
+  } catch (error) {
+    console.error('Error checking verification status:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Verify email (called when user clicks verification link)
+app.post('/api/users/verify-email', async (req, res) => {
+  try {
+    const { access_token, refresh_token } = req.body;
+
+    if (!access_token) {
+      return res.status(400).json({ success: false, error: 'Access token required' });
+    }
+
+    // Verify the token and get user
+    const { data: { user }, error: verifyError } = await supabaseAdmin.auth.getUser(access_token);
+
+    if (verifyError || !user) {
+      console.error('Error verifying token:', verifyError);
+      return res.status(400).json({ success: false, error: 'Invalid verification token' });
+    }
+
+    // Update the user's email confirmation status
+    const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+      email_confirm: true
+    });
+
+    if (updateAuthError) {
+      console.error('Error updating auth user:', updateAuthError);
+      return res.status(500).json({ success: false, error: 'Failed to verify email' });
+    }
+
+    // Update verified_users table
+    const { error: updateVerifiedError } = await supabaseAdmin
+      .from('verified_users')
+      .update({ is_verified: true })
+      .eq('user_id', user.id);
+
+    if (updateVerifiedError) {
+      console.error('Error updating verified_users:', updateVerifiedError);
+      // Don't fail the verification if this update fails
+    }
+
+    res.json({ success: true, message: 'Email verified successfully!' });
+  } catch (error) {
+    console.error('Error in verify email:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
@@ -1056,6 +1318,21 @@ app.post('/api/contests/:contestId/join', authenticateUser, async (req, res) => 
     const { contestId } = req.params;
     const userId = req.user?.id;
 
+    // Check if user is email verified
+    const { data: verifiedUser, error: verifiedError } = await supabaseAdmin
+      .from('verified_users')
+      .select('is_verified')
+      .eq('user_id', userId)
+      .single();
+
+    if (verifiedError || !verifiedUser || !verifiedUser.is_verified) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Email verification required to join contests. Please verify your email first.',
+        requiresVerification: true
+      });
+    }
+
     // Check if contest exists and is active
     const { data: contest, error: contestError } = await supabaseAdmin
       .from('contests')
@@ -1117,12 +1394,32 @@ app.post('/judge', upload.single('code'), async (req, res) => {
     console.log('Judge request received:', req.body);
     console.log('File received:', req.file);
     
-    const { problemId } = req.body;
+    const { problemId, userId } = req.body;
     const codeFile = req.file;
 
-    if (!codeFile || !problemId) {
-      console.log('Missing code file or problem ID');
-      return res.status(400).json({ error: 'Missing code file or problem ID' });
+    if (!codeFile || !problemId || !userId) {
+      console.log('Missing code file, problem ID, or user ID');
+      return res.status(400).json({ error: 'Missing code file, problem ID, or user ID' });
+    }
+
+    // Check if user is email verified before allowing submissions
+    const { data: verifiedUser, error: verifiedError } = await supabaseAdmin
+      .from('verified_users')
+      .select('is_verified')
+      .eq('user_id', userId)
+      .single();
+
+    if (verifiedError || !verifiedUser || !verifiedUser.is_verified) {
+      // Clean up uploaded file
+      try {
+        fs.unlinkSync(codeFile.path);
+      } catch (error) {
+        console.log('Error cleaning up file:', error);
+      }
+      return res.status(403).json({ 
+        error: 'Email verification required to submit solutions. Please verify your email first.',
+        requiresVerification: true
+      });
     }
 
     // Get problem test cases from Supabase

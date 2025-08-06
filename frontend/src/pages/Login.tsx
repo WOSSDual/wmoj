@@ -61,47 +61,25 @@ const Login: React.FC = () => {
     }
 
     try {
-      // First, check if email or username already exists
-      const checkResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5001'}/api/users/check-availability`, {
+      // Use our backend API for the entire signup process
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5001'}/api/users/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email: email.trim(),
+          password,
           username: username.trim()
         })
       });
 
-      const checkResult = await checkResponse.json();
+      const result = await response.json();
       
-      if (!checkResult.success) {
-        setError(checkResult.error);
-        setIsLoading(false);
-        return;
-      }
-
-      // If checks pass, proceed with signup
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username: username.trim() // Store username in user metadata for later use
-          }
-        }
-      });
-
-      if (error) {
-        setError(error.message);
-        return;
-      }
-      
-      if (data.user) {
-        // Only show success message - profile will be created after email verification
-        setError('Success! Please check your email for a confirmation link. Your profile will be created once you verify your email.');
+      if (result.success) {
+        setError('Success! Please check your email for a confirmation link. You can log in immediately, but you\'ll need to verify your email to join contests and submit solutions.');
       } else {
-        setError('An unknown error occurred during signup.');
+        setError(result.error || 'Signup failed');
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
