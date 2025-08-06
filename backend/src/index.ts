@@ -24,15 +24,41 @@ const port = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://wmoj.ca',
-    'https://wmoj.onrender.com',
-    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
-  ],
-  credentials: true
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://wmoj.ca',
+      'https://wmoj.onrender.com',
+      ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
+    ];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200,
+  preflightContinue: false
 }));
 app.use(express.json());
+
+// Error handling middleware for CORS
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({
+      error: 'CORS policy violation',
+      message: 'Origin not allowed'
+    });
+  }
+  next(err);
+});
 
 // Supabase client
 const supabaseUrl = process.env.SUPABASE_URL!;
@@ -124,6 +150,47 @@ app.get('/', (req, res) => {
 });
 
 // Secure API Routes
+
+// Handle preflight requests for authenticated endpoints
+app.options('/api/submissions', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+app.options('/api/contests/:contestId', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+app.options('/api/contests/:contestId/leaderboard', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+app.options('/api/participations', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+app.options('/api/contests/:contestId/join', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
 
 // Get active contests (public)
 app.get('/api/contests', async (req, res) => {
@@ -452,6 +519,47 @@ app.get('/api/contests/:contestId/leaderboard', authenticateUser, async (req, re
 
 // Admin routes
 
+// Handle preflight requests for admin endpoints
+app.options('/api/admin/contests', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+app.options('/api/admin/problems', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+app.options('/api/admin/contests/:contestId', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+app.options('/api/admin/problems/:problemId', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+app.options('/api/admin/contests/:contestId/status', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'PUT, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
 // Get all contests (admin only)
 app.get('/api/admin/contests', authenticateUser, requireAdmin, async (req, res) => {
   try {
@@ -488,6 +596,15 @@ app.get('/api/admin/problems', authenticateUser, requireAdmin, async (req, res) 
     console.error('Error fetching problems:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
+});
+
+// Handle preflight requests for finalize signup
+app.options('/api/users/finalize-signup', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
 });
 
 app.post('/api/users/finalize-signup', async (req, res) => {
@@ -779,6 +896,15 @@ app.delete('/api/admin/problems/:problemId', authenticateUser, requireAdmin, asy
 
 // Note: Profile and admin user creation are now handled by /api/users/finalize-signup
 
+// Handle preflight requests for profile endpoint
+app.options('/api/profile', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
 // Get user profile
 app.get('/api/profile', authenticateUser, async (req, res) => {
   try {
@@ -918,6 +1044,15 @@ app.post('/api/contests/:contestId/join', authenticateUser, async (req, res) => 
     console.error('Error joining contest:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
+});
+
+// Handle preflight requests for judge endpoint
+app.options('/judge', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
 });
 
 // Judge endpoint for code execution
